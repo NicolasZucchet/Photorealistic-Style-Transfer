@@ -16,6 +16,7 @@ CUDA support was added in several functions ( image_preprocessing.image_to_tenso
 
 ## Ideas for improvement
 
+### 1
 When running the script, I noticed that the regularization loss was often negative and was very unstable.
 Example :
 
@@ -35,6 +36,30 @@ step  500: S: 229.500 C: 43.207 R:19783.462
 
 We should investigate into this behavior
 
+### 2
+After running 2000 epochs on an image with regularization, I notice that the losses diverge...
+
+step 1150: S: 309.799 C: 82.518 R:52448.856
+
+step 1200: S: 4812.417 C: 4842.881 R:154887.349
+
+step 1250: S: 408.577 C: 193.212 R:54830.851
+
+step 1300: S: 315.698 C: 97.832 R:47640.283
+
+step 1350: S: 35584.047 C: 8521.994 R:392544.276
+
+step 1400: S: 392.760 C: 147.498 R:74679.916
+
+step 1450: S: 325.284 C: 110.247 R:66217.362
+
+step 1500: S: 312.444 C: 75.289 R:63786.109
+
+Earlier in the process we had :
+
+step  250: S: 88.981 C: 5.352 R:1647.456
+
+The resulting image is saved as "problem.png"
 
 ## Credits
 The entire code structure is cloned from : https://github.com/yagudin/PyTorch-deep-photo-styletransfer
