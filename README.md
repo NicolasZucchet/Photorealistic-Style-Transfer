@@ -14,7 +14,7 @@ Nicolas : Looking for changes which could improve the time needed to process an 
 
 CUDA support was added in several functions ( image_preprocessing.image_to_tensor and image_preprocessing.tensor_to_image)
 
-## Ideas for improvement
+## Problems to be corrected
 
 ### 1
 When running the script, I noticed that the regularization loss was often negative and was very unstable.
