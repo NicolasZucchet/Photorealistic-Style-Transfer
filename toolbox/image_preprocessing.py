@@ -13,10 +13,10 @@ def tensor_to_image(x):
         (B, C, W, H) -> (B, W, H, C) 
 
     """
-    return x.detach().numpy().transpose(0, 2, 3, 1).squeeze().clip(0, 1)
+    return x.detach().to("cpu").numpy().transpose(0, 2, 3, 1).squeeze().clip(0, 1)
 
 
-def image_to_tensor(x):
+def image_to_tensor(x,device="cpu"):
     """
     Transforms np.array to torch.Tensor
         (W, H)       -> (1, 1, W, H)
@@ -25,11 +25,11 @@ def image_to_tensor(x):
 
     """
     if x.ndim == 2:
-        return torch.Tensor(x).unsqueeze(0).unsqueeze(0)
+        return torch.Tensor(x).unsqueeze(0).unsqueeze(0).to(device)
     if x.ndim == 3:
-        return torch.Tensor(x.transpose(2, 0, 1)).unsqueeze(0)
+        return torch.Tensor(x.transpose(2, 0, 1)).unsqueeze(0).to(device)
     if x.ndim == 4:
-        return torch.Tensor(x.transpose(0, 3, 1, 2))
+        return torch.Tensor(x.transpose(0, 3, 1, 2)).to(device)
     raise RuntimeError("np.array's ndim is out of range 2, 3 or 4.")
 
 
@@ -214,3 +214,32 @@ def plt_images(
 
     plt.tight_layout()
     plt.show()
+
+def save_images(
+    path,
+    style_img,
+    output_img,
+    content_img,
+    style_title="Style Image",
+    output_title="Output Image",
+    content_title="Content Image",
+):
+    """
+    Plots style, output and content images to ease comparison.
+    """
+    plt.figure(figsize=(12, 4))
+
+    plt.subplot(1, 3, 1)
+    plt.imshow(tensor_to_image(style_img))
+    plt.title("Style Image")
+
+    plt.subplot(1, 3, 2)
+    plt.imshow(tensor_to_image(output_img))
+    plt.title("Output Image")
+
+    plt.subplot(1, 3, 3)
+    plt.imshow(tensor_to_image(content_img))
+    plt.title("Content Image")
+
+    plt.tight_layout()
+    plt.savefig(path)
