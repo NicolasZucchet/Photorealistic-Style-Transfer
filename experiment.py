@@ -95,17 +95,17 @@ class Experiment():
             normalization = Normalization(normalization_mean, normalization_std).to(self.parameters.device)
             model = nn.Sequential(normalization)
 
-            model.add_module(self.parameters.content_layers[0], nn.Conv2d(3,3,5))
+            model.add_module(self.parameters.content_layers[0], nn.Conv2d(3,3,5).to(self.parameters.device))
             target = model(self.content_image).detach()
-            content_loss = ContentLoss(target)
+            content_loss = ContentLoss(target).to(self.parameters.device)
             model.add_module("content_loss_1", content_loss)
             content_losses.append(content_loss)
 
-            model.add_module(self.parameters.style_layers[0], nn.Conv2d(3,3,5))
+            model.add_module(self.parameters.style_layers[0], nn.Conv2d(3,3,5).to(self.parameters.device))
             target_feature = model(self.style_image).detach()
             style_masks = [model(mask) for mask in style_masks]
             content_masks = [model(mask) for mask in content_masks]
-            style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks)
+            style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks).to(self.parameters.device)
             model.add_module("style_loss_1", style_loss)
             style_losses.append(style_loss)
 
@@ -154,7 +154,7 @@ class Experiment():
                 name = "relu{}_{}".format(num_pool, num_conv)
                 layer = nn.ReLU(inplace=False)
 
-            elif isinstance(layer, nn.MaxPool2d):
+            elif isinstance(layer, nn.MaxPool2d) or isinstance(layer, nn.AvgPool2d):
                 num_pool += 1
                 num_conv = 0
                 name = "pool_{}".format(num_pool)
