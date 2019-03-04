@@ -201,14 +201,14 @@ class Experiment():
             if not(self.parameters.resume_model) and name in self.parameters.content_layers:
                 # if we are resuming, the loss layers are already created
                 target = model(self.content_image).detach()
-                content_loss = ContentLoss(target, weight= 1/self.parameters.content_layers)
+                content_loss = ContentLoss(target, weight= 1/len(self.parameters.content_layers))
                 model.add_module("content_loss_{}".format(num_pool), content_loss)
                 content_losses.append(content_loss)
 
             if not(self.parameters.resume_model) and name in self.parameters.style_layers:
                 # if we are resuming, the loss layers are already created
                 target_feature = model(self.style_image).detach()
-                style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks, weight= 1/self.parameters.content_layers)
+                style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks, weight= 1/len(self.parameters.content_layers))
                 model.add_module("style_loss_{}".format(num_pool), style_loss)
                 style_losses.append(style_loss)
             
