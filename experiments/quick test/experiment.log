@@ -1,0 +1,7 @@
+main - INFO - images loaded
+main - INFO - masks loaded
+main - INFO - laplacian computed
+main - INFO -  --- Setting lr scheduler to ReduceLROnPlateau ---
+main - INFO - optimizer and scheduler created
+main - INFO - model constructed
+main - INFO - Finished initialising Experiment

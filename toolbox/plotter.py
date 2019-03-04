@@ -63,8 +63,3 @@ def save_output_(exp):
     output = exp.style_image.detach().numpy()[0]
     output = np.array( [ [ (output[0][x][y], output[1][x][y], output[2][x][y] ) for y in range(output.shape[2]) ] for x in range(output.shape[1]) ] )
     plt._imsave(exp.parameters.res_dir+"style_image.png",output)
-
-def save_output(exp):
-    image = copy.deepcopy(exp.content_image)
-    output = exp.model(image).data.clamp(0,1)
-    save_images(exp.parameters.res_dir+"output.png",exp.style_image,output,exp.content_image)

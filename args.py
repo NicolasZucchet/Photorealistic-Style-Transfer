@@ -138,9 +138,6 @@ def parse_args(prog = sys.argv[1:]):
         else:
             sys.exit(0)
     
-    if os.path.exists(args.tmp_dir):
-        shutil.rmtree(args.tmp_dir)
-
     # os.makedirs(args.tmp_dir+"save/",exist_ok=True) # is recursive
     os.makedirs(args.res_dir+"save/",exist_ok=True) # is recursive
 

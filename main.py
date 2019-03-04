@@ -4,7 +4,8 @@ import datetime
 import time
 from toolbox.utils import safe_save
 from experiment import Experiment
-from toolbox.plotter import generate_plots, save_output
+from toolbox.plotter import generate_plots
+from toolbox.image_preprocessing import save_images
 
 
 def manual_mode(query):
@@ -33,7 +34,7 @@ def main():
     exp.save() # does nothing if exp.parameters.save_model = False
 
     if exp.parameters.save:
-        save_output(exp)
+        save_images(exp.parameters.res_dir+"output.png",exp.style_image,exp.input_image,exp.content_image)
 
     if not(exp.parameters.no_metrics):
         generate_plots(exp)
