@@ -16,44 +16,51 @@ import matplotlib.pyplot as plt
 class Experiment():
 
     def __init__(self,args):
-
+	
+		# parameters
         self.parameters = Experiment_parameters(args)
         if args.resume_model:
             self.parameters.load() 
 
+		# logging
         logging.basicConfig(filename=args.res_dir+"experiment.log",format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO)
         self.log = logging.getLogger("main")
 
-        self.listener = init_listener(self.parameters.resume_model,self.parameters.load_path+"listener.json",self.parameters.no_metrics,self.parameters.verbose)
+		# metrics listener
+        self.listener = init_listener(no_metrics = self.parameters.no_metrics)
         if args.resume_model:
             self.listener.load(args.save_listener_path)
 
+		# images
         self.style_image = image_loader(args.style_image_path, self.parameters.imsize).to(args.device, torch.float)
         self.content_image = image_loader(args.content_image_path, self.parameters.imsize).to(args.device, torch.float)
         self.input_image = self.content_image.clone()
         self.log.info("images loaded")
 
+		# masks
         self.style_masks, self.content_masks = masks_loader( args.seg_style_path, args.seg_content_path, self.parameters.imsize)
         for i in range(len(self.style_masks)):
             self.style_masks[i] = self.style_masks[i].to(args.device)
             self.content_masks[i] = self.content_masks[i].to(args.device)
         self.log.info("masks loaded")
 
-
+		# laplacian computation
         if self.parameters.reg:
             self.L = compute_laplacian(tensor_to_image(self.content_image))
             self.log.info("laplacian computed")
 
+		# loading/initialising the epoch counter
         if args.resume_model:
             self.load()
             # loads the epoch  (and current loss values in the future!!)
-        
         else:
             self.epoch = 0
 
+		# optimizer
         set_optimizer_and_scheduler(self)
         self.log.info("optimizer and scheduler created")
 
+		# constructing/loading the model
         self.construct_model()
         self.log.info("model constructed")
 
@@ -84,6 +91,8 @@ class Experiment():
             - resize happens only in the pooling layers
         """
 
+		# LOADING A BASE MODEL
+		
         if self.parameters.base_model == "quick":
             content_losses = []
             style_losses = []
@@ -134,7 +143,7 @@ class Experiment():
 
         #cnn = copy.deepcopy(cnn)
 
-        # copying layers form the base model (cnn) and adding the loss layers
+        # CONSTRUCTING THE MODEL FROM THE BASE MODEL
 
         content_losses = []
         style_losses = []
@@ -143,9 +152,14 @@ class Experiment():
 
 
         num_pool, num_conv = 0, 0
-        if self.parameters.resume_model:
-            num_cl, num_sl = 0,0
+        n_loss_layers, total_loss_layers = 0, len(self.parameters.content_layers)+len(self.parameters.style_layers)
+        num_cl, num_sl = 0,0
+		
         for layer in cnn.children():
+
+            if n_loss_layers >= total_loss_layers:
+                break
+
             if isinstance(layer, nn.Conv2d):
                 num_conv += 1
                 name = "conv{}_{}".format(num_pool, num_conv)
@@ -196,19 +210,22 @@ class Experiment():
                 )
 
             model.add_module(name, layer)
-
+			
+			# adding the loss layers when needed
 
             if not(self.parameters.resume_model) and name in self.parameters.content_layers:
+                n_loss_layers += 1
                 # if we are resuming, the loss layers are already created
                 target = model(self.content_image).detach()
-                content_loss = ContentLoss(target, weight= 1/len(self.parameters.content_layers))
+                content_loss = ContentLoss(target)#, weight= 1/len(self.parameters.content_layers))
                 model.add_module("content_loss_{}".format(num_pool), content_loss)
                 content_losses.append(content_loss)
 
             if not(self.parameters.resume_model) and name in self.parameters.style_layers:
+                n_loss_layers += 1
                 # if we are resuming, the loss layers are already created
                 target_feature = model(self.style_image).detach()
-                style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks, weight= 1/len(self.parameters.content_layers))
+                style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks)#, weight= 1/len(self.parameters.content_layers))
                 model.add_module("style_loss_{}".format(num_pool), style_loss)
                 style_losses.append(style_loss)
             
@@ -237,8 +254,6 @@ class Experiment():
         print() # to cancel the end = "" in closure
         
         self.log.info("Experiment finised")
-
-        self.input_image = self.input_image.data.clamp_(0, 1)        
     
     def closure(self):
         """
@@ -271,7 +286,7 @@ class Experiment():
             meters["reg_score"].update(reg_score.item())
             loss += reg_score
 
-        if self.parameters.verbose:
+        if self.parameters.verbose and self.epoch%20==0:
                 print(
                 "\r epoch {:>4d}:".format(self.epoch),
                 "S: {:.3f} C: {:.3f} R: {:.3f}".format(
@@ -280,6 +295,7 @@ class Experiment():
                 end = "")
 
         self.scheduler.step()
+        meters["lr"].update(self.optimizer.state_dict()['param_groups'][0]['lr'])
         self.local_epoch += 1
         self.epoch += 1
 

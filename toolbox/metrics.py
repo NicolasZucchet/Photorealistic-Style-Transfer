@@ -78,6 +78,7 @@ def make_meters(empty=False):
         'content_score': AverageMeter(empty=empty),
         'reg_score': AverageMeter(empty=empty),
         'epoch_time': AverageMeter(empty=empty),
+        'lr' : ValueMeter(empty=empty)
     }
     return meters_dict
 

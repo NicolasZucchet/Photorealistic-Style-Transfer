@@ -41,11 +41,11 @@ def parse_args(prog = sys.argv[1:]):
                         help='select the convolution layers for which we will compute the style losses')
     parser.add_argument('-num_epochs', default=int(2e2), type=int,
                         help='the number of epochs for this train')
-    parser.add_argument('-style_weight', default=1, type=float,
+    parser.add_argument('-style_weight', default=1e6, type=float,
                         help='the weight given to the style loss')
-    parser.add_argument('-content_weight', default=1e2, type=float,
+    parser.add_argument('-content_weight', default=1e4, type=float,
                         help='the weight given to the content loss')
-    parser.add_argument('-reg_weight', default=1e4, type=float,
+    parser.add_argument('-reg_weight', default=1e-4, type=float,
                         help='the weight given to the regularization loss')
 
     # optimizer settings
@@ -112,11 +112,12 @@ def parse_args(prog = sys.argv[1:]):
 
     args.res_dir = '{}experiments/{}/'.format(args.work_dir, args.save_name)
     # args.tmp_dir = '{}experiments/{}/'.format(args.work_dir,"tmp")
-    args.load_path = '{}experiments/{}/save/'.format(args.work_dir, args.load_name)
-    args.load_model_path = '{}experiments/{}/save/model.pt'.format(args.work_dir, args.load_name)
-    args.load_parameters_path = '{}experiments/{}/save/parameters.json'.format(args.work_dir, args.load_name)
-    args.load_experiment_path = '{}experiments/{}/save/experiment.dat'.format(args.work_dir, args.load_name)
-    args.load_listener_path = '{}experiments/{}/save/listener.json'.format(args.work_dir, args.save_name)
+    if args.resume_model:
+        args.load_path = '{}experiments/{}/save/'.format(args.work_dir, args.load_name)
+        args.load_model_path = '{}experiments/{}/save/model.pt'.format(args.work_dir, args.load_name)
+        args.load_parameters_path = '{}experiments/{}/save/parameters.json'.format(args.work_dir, args.load_name)
+        args.load_experiment_path = '{}experiments/{}/save/experiment.dat'.format(args.work_dir, args.load_name)
+        args.load_listener_path = '{}experiments/{}/save/listener.json'.format(args.work_dir, args.save_name)
     args.save_parameters_path = '{}experiments/{}/save/parameters.json'.format(args.work_dir, args.save_name)
     args.save_model_path = '{}experiments/{}/save/model.pt'.format(args.work_dir, args.save_name)
     args.save_experiment_path = '{}experiments/{}/save/experiment.dat'.format(args.work_dir, args.save_name)

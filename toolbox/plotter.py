@@ -18,6 +18,7 @@ def generate_plots(experience):
     save_plot(experience.parameters, experience.listener,tags=['train'], name='content_score', title='Evolution of content loss over epochs')
     save_plot(experience.parameters, experience.listener,tags=['train'], name='reg_score', title='Evolution of regularization loss over epochs')
     save_plot(experience.parameters, experience.listener,tags=['train'], name='epoch_time', title='Evolution of the epoch time over epochs')
+    save_plot(experience.parameters, experience.listener,tags=['train'], name='lr', title='Evolution of the learning rate over epochs')
 
 
 # get plot data from logger and plot to image file
