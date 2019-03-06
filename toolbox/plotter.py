@@ -5,19 +5,9 @@ Plotter class for plotting various things
 import os
 import sys
 import copy
-# import matplotlib as mpl
-# mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.ticker as ticker
-from .image_preprocessing import save_images
-
-
-def generate_plots(experience):
-    save_plot(experience.parameters, experience.listener,tags=['train'], name='style_score', title='Evolution of style loss over epochs')
-    save_plot(experience.parameters, experience.listener,tags=['train'], name='content_score', title='Evolution of content loss over epochs')
-    save_plot(experience.parameters, experience.listener,tags=['train'], name='reg_score', title='Evolution of regularization loss over epochs')
-    save_plot(experience.parameters, experience.listener,tags=['train'], name='epoch_time', title='Evolution of the epoch time over epochs')
 
 
 # get plot data from logger and plot to image file
@@ -63,8 +53,3 @@ def save_output_(exp):
     output = exp.style_image.detach().numpy()[0]
     output = np.array( [ [ (output[0][x][y], output[1][x][y], output[2][x][y] ) for y in range(output.shape[2]) ] for x in range(output.shape[1]) ] )
     plt._imsave(exp.parameters.res_dir+"style_image.png",output)
-
-def save_output(exp):
-    image = copy.deepcopy(exp.content_image)
-    output = exp.model(image).data.clamp(0,1)
-    save_images(exp.parameters.res_dir+"output.png",exp.style_image,output,exp.content_image)

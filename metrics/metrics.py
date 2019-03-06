@@ -74,10 +74,12 @@ class ValueMeter(object):
 
 def make_meters(empty=False):
     meters_dict = {
-        'style_score': AverageMeter(empty=empty),
-        'content_score': AverageMeter(empty=empty),
-        'reg_score': AverageMeter(empty=empty),
-        'epoch_time': AverageMeter(empty=empty),
+        'style_score': ValueMeter(empty=empty),
+        'content_score': ValueMeter(empty=empty),
+        'reg_score': ValueMeter(empty=empty),
+        'total_score': ValueMeter(empty=empty),
+        'epoch_time': ValueMeter(empty=empty),
+        'lr' : ValueMeter(empty=empty)
     }
     return meters_dict
 

@@ -12,9 +12,11 @@ def parse_args(prog = sys.argv[1:]):
    
     parser.add_argument('-quick', default=False, action='store_true', help='run a very quick test to verify a new pipeline, this will overwrite many parameters. If no name is given, default one will be "quick test"')
     # display
-    parser.add_argument('-verbose', default=False, action='store_true', help='display the learning process in a verbose way')
+    parser.add_argument('-quiet', default=False, action='store_true', help='Do not display the learning process in a verbose way')
     # saving
     parser.add_argument('-no_save', default=False, action='store_true', help='do not save the model at the end of the experiment')
+    # disable all optional parameters
+    parser.add_argument('-ghost', default=False, action='store_true', help='disable all optional parameters')
     # plotting
     parser.add_argument('-no_metrics', default=False, action='store_true', help='do not records metrics for this experiment')
     # images to use
@@ -45,7 +47,7 @@ def parse_args(prog = sys.argv[1:]):
                         help='the weight given to the style loss')
     parser.add_argument('-content_weight', default=1e4, type=float,
                         help='the weight given to the content loss')
-    parser.add_argument('-reg_weight', default=1e-2, type=float,
+    parser.add_argument('-reg_weight', default=1e-4, type=float,
                         help='the weight given to the regularization loss')
 
     # optimizer settings
@@ -61,7 +63,7 @@ def parse_args(prog = sys.argv[1:]):
     # scheduler settings
     parser.add_argument('-scheduler', default="plateau", type=str,
                         help='the type of lr scheduler used (step,exponential,plateau) ')
-    parser.add_argument('-lr_step', default=int(5e2), type=int,
+    parser.add_argument('-lr_step', default=int(100), type=int,
                         help='the epoch step between learning rate drops (for StepScheduler and Plateau)')
     parser.add_argument('-lr_decay', default=int(1e-1), type=float,
                         help='the lr decay momentum/gamma (used for step and exponential decay)')
@@ -72,6 +74,13 @@ def parse_args(prog = sys.argv[1:]):
     args = parser.parse_args(args=prog)
 
     # update args
+
+    if args.ghost:
+        args.no_save = True
+        args.no_log = True
+        args.no_metrics = True
+    else:
+        args.no_log = False
     
     args.reg = not(args.no_reg)
     args.__delattr__("no_reg")
@@ -88,6 +97,11 @@ def parse_args(prog = sys.argv[1:]):
     
     args.__delattr__("resume")
 
+    args.imsize = (512,512) if args.device == "cuda" else (32,32)
+
+    args.verbose = not(args.quiet)
+    args.__delattr__("quiet")
+
     ## LISTS
 
     args.style_layers = ["conv"+el for el in args.style_layers]
@@ -101,13 +115,15 @@ def parse_args(prog = sys.argv[1:]):
 
     if args.quick:
         args.num_epochs = 1
+        args.content_layers = ["conv0_1"]
+        args.style_layers = ["conv0_2"]
         args.base_model = "quick"
         if args.save_name == "":
             args.save_name = "quick test"
 
     args.name = args.save_name
 
-    if args.name == "":
+    if args.name == "" and not(args.ghost):
         raise Exception("You must enter a name for the experiment (-name) or specify that it is a quick experiment (-quick)")
 
     args.res_dir = '{}experiments/{}/'.format(args.work_dir, args.save_name)
@@ -131,18 +147,16 @@ def parse_args(prog = sys.argv[1:]):
     if args.resume_model and not(os.path.exists('{}experiments/{}/'.format(args.work_dir, args.load_name))):
         raise Exception("Tried to retrieve a model that does not exist at location : "+'{}experiments/{}/'.format(args.work_dir, args.load_name))
     
-    if os.path.exists('{}experiments/{}'.format(args.work_dir, args.save_name)) and (args.load_name!=args.save_name or not(args.resume_model)):
+    if not(args.ghost) and os.path.exists('{}experiments/{}'.format(args.work_dir, args.save_name)) and (args.load_name!=args.save_name or not(args.resume_model)):
         cont = input("You have entered an experiment name that already exists even though you are not resuming that experiment, do you wish to continue (this will delete the folder: "+args.res_dir+"). [y/n] ") == "y"
         if cont:
             shutil.rmtree(args.res_dir)
         else:
             sys.exit(0)
     
-    if os.path.exists(args.tmp_dir):
-        shutil.rmtree(args.tmp_dir)
-
     # os.makedirs(args.tmp_dir+"save/",exist_ok=True) # is recursive
-    os.makedirs(args.res_dir+"save/",exist_ok=True) # is recursive
+    if not(args.ghost):
+        os.makedirs(args.res_dir+"save/",exist_ok=True) # is recursive
 
     assert args.res_dir is not None
 

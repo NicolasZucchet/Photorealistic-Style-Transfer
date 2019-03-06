@@ -13,10 +13,10 @@ def tensor_to_image(x):
         (B, C, W, H) -> (B, W, H, C) 
 
     """
-    return x.detach().to("cpu").numpy().transpose(0, 2, 3, 1).squeeze().clip(0, 1)
+    return x.detach().numpy().transpose(0, 2, 3, 1).squeeze().clip(0, 1)
 
 
-def image_to_tensor(x,device="cpu"):
+def image_to_tensor(x):
     """
     Transforms np.array to torch.Tensor
         (W, H)       -> (1, 1, W, H)
@@ -25,11 +25,11 @@ def image_to_tensor(x,device="cpu"):
 
     """
     if x.ndim == 2:
-        return torch.Tensor(x).unsqueeze(0).unsqueeze(0).to(device)
+        return torch.Tensor(x).unsqueeze(0).unsqueeze(0)
     if x.ndim == 3:
-        return torch.Tensor(x.transpose(2, 0, 1)).unsqueeze(0).to(device)
+        return torch.Tensor(x.transpose(2, 0, 1)).unsqueeze(0)
     if x.ndim == 4:
-        return torch.Tensor(x.transpose(0, 3, 1, 2)).to(device)
+        return torch.Tensor(x.transpose(0, 3, 1, 2))
     raise RuntimeError("np.array's ndim is out of range 2, 3 or 4.")
 
 
@@ -214,5 +214,3 @@ def plt_images(
 
     plt.tight_layout()
     plt.show()
-
-
