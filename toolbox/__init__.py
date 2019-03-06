@@ -9,6 +9,9 @@ from toolbox.image_preprocessing import tensor_to_image
 from toolbox.plotter import save_plot
 
 def get_experiment_parameters(args):
+    if not(torch.cuda.is_available()) and args.device == "cuda":
+        args.device = "cpu"
+        logging.getLogger("main").info("Device was CUDA but CUDA is not available on this machine... Switching to CPU")
     return Experiment_parameters(args)
 
 def get_optimizer(experience,parameters,losses = None):
