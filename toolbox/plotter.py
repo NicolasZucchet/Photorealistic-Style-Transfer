@@ -16,9 +16,8 @@ def save_plot(parameters, logger, tags=['train'], name='epoch_time', title='', l
     labels = tags if labels is None else labels
 
     epochs = None
-	
-	if ax is None:
-    	fig, ax = plt.subplots(1,1)
+    if ax is None:
+        fig, ax = plt.subplots(1,1)
 
     for tag in tags:
         if not(tag in var_dict):
@@ -35,13 +34,13 @@ def save_plot(parameters, logger, tags=['train'], name='epoch_time', title='', l
 
     plt.set_xlabel('epochs')
     ax.set_title('{} - {}'.format(title, parameters.name))
-#     plt.legend(labels=labels)
+    # plt.legend(labels=labels)
 
     out_fn = os.path.join(parameters.res_dir, '{}_{}.png'.format(parameters.name, name))
     plt.savefig(out_fn, bbox_inches='tight', dpi=200)
     plt.gcf().clear()
     plt.close()
-	return ax
+    # return ax
 
 def save_output_(exp):
     image = copy.deepcopy(exp.content_image)
