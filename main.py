@@ -13,8 +13,27 @@ from toolbox.image_preprocessing import plt_images
 def manual_mode(query):
     query = query.split(" ")[1:]
     args = parse_args(prog=query)
-    exp = Experiment(args)
-    return exp
+    parameters = get_experiment_parameters(args)
+    parameters.disp()
+
+    configure_logger(parameters.res_dir+"experiment.log")
+    log = logging.getLogger("main")
+
+    experiment = get_experiment(parameters)
+
+
+    listener = get_listener(parameters.no_metrics,parameters.resume_model,parameters.load_listener_path)
+    log.info("experiment and listener objects created")
+
+    model, losses =  get_model_and_losses(experiment, parameters, experiment.content_image)
+    log.info("model and losses objects created")
+
+    optimizer, scheduler = get_optimizer(experiment, parameters, losses)
+    log.info("optimizer and scheduler objects created")
+
+    log.info('Experiment ' + parameters.save_name+ ' started on {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
+
+    return {"parameters":parameters, "log":log, "experiment":experiment, "listener":listener, "model":model, "losses":losses, "optimizer":optimizer}
 
 def main():
 
