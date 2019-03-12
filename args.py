@@ -22,6 +22,7 @@ def parse_args(prog = sys.argv[1:]):
     # images to use
     parser.add_argument('-style_image', default='1', type=str, help='ID of the style image to use')
     parser.add_argument('-content_image', default='1', type=str, help='ID of the content image to use')
+    parser.add_argument('-imsize', default=512, type=int, help='size to which the images should be resized (on cpu, default will be 32)')
 
 
 
@@ -97,7 +98,8 @@ def parse_args(prog = sys.argv[1:]):
     
     args.__delattr__("resume")
 
-    args.imsize = (512,512) if args.device == "cuda" else (32,32)
+    size = args.imsize
+    args.imsize = (size,size) if args.device == "cuda" else (32,32)
 
     args.verbose = not(args.quiet)
     args.__delattr__("quiet")
