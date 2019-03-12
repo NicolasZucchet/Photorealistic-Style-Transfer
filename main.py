@@ -128,8 +128,7 @@ def main():
         save_all(experiment,model,parameters,listener)
     if not(parameters.ghost):
         save_images(parameters.res_dir+"output.png",experiment.style_image,experiment.input_image,experiment.content_image)
-    else:
-        plt_images(experiment.style_image,experiment.input_image,experiment.content_image)
+    plt_images(experiment.style_image,experiment.input_image,experiment.content_image)
 
     if not(parameters.no_metrics):
         generate_plots(parameters, listener)

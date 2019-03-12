@@ -22,6 +22,7 @@ def parse_args(prog = sys.argv[1:]):
     # images to use
     parser.add_argument('-style_image', default='1', type=str, help='ID of the style image to use')
     parser.add_argument('-content_image', default='1', type=str, help='ID of the content image to use')
+    parser.add_argument('-imsize', default=512, type=int, help='size to which the images should be resized (on cpu, default will be 32)')
 
 
 
@@ -39,7 +40,7 @@ def parse_args(prog = sys.argv[1:]):
                         help='Which device to use : cuda or cpu')
     parser.add_argument('-content_layers', nargs = "+", default=['4_2'],
                         help='select the convolution layers for which we will compute the content losses')
-    parser.add_argument('-style_layers', default=['1_1','2_1','3_1','4_1'],
+    parser.add_argument('-style_layers', nargs = "+", default=['1_1','2_1','3_1','4_1'],
                         help='select the convolution layers for which we will compute the style losses')
     parser.add_argument('-num_epochs', default=int(2e2), type=int,
                         help='the number of epochs for this train')
@@ -97,7 +98,8 @@ def parse_args(prog = sys.argv[1:]):
     
     args.__delattr__("resume")
 
-    args.imsize = (512,512) if args.device == "cuda" else (32,32)
+    size = args.imsize
+    args.imsize = (size,size) if args.device == "cuda" else (32,32)
 
     args.verbose = not(args.quiet)
     args.__delattr__("quiet")
@@ -117,7 +119,7 @@ def parse_args(prog = sys.argv[1:]):
         args.num_epochs = 1
         args.content_layers = ["conv0_1"]
         args.style_layers = ["conv0_2"]
-        args.base_model = "quick"
+        # args.base_model = "quick"
         if args.save_name == "":
             args.save_name = "quick test"
 
