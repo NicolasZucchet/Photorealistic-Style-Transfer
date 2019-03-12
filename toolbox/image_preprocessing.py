@@ -198,6 +198,8 @@ def plt_images(
     """
     Plots style, output and content images to ease comparison.
     """
+    plt.gcf().clear()
+    plt.close()
     plt.figure(figsize=(12, 4))
 
     plt.subplot(1, 3, 1)
