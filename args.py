@@ -39,7 +39,7 @@ def parse_args(prog = sys.argv[1:]):
                         help='Which device to use : cuda or cpu')
     parser.add_argument('-content_layers', nargs = "+", default=['4_2'],
                         help='select the convolution layers for which we will compute the content losses')
-    parser.add_argument('-style_layers', default=['1_1','2_1','3_1','4_1'],
+    parser.add_argument('-style_layers', nargs = "+", default=['1_1','2_1','3_1','4_1'],
                         help='select the convolution layers for which we will compute the style losses')
     parser.add_argument('-num_epochs', default=int(2e2), type=int,
                         help='the number of epochs for this train')
