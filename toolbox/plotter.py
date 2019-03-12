@@ -38,8 +38,8 @@ def save_plot(parameters, logger, tags=['train'], name='epoch_time', title='', l
 
     out_fn = os.path.join(parameters.res_dir, '{}_{}.png'.format(parameters.name, name))
     plt.savefig(out_fn, bbox_inches='tight', dpi=200)
-    plt.gcf().clear()
-    plt.close()
+    # plt.gcf().clear()
+    # plt.close()
     # return ax
 
 def save_output_(exp):

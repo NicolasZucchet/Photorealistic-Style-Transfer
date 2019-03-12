@@ -36,7 +36,9 @@ def save_all(experiment,model,parameters,listener):
     listener.save(parameters.save_listener_path)
 
 def generate_plots(parameters, listener):
-    f, axes = plt.subplots(2,3)
+    plt.gcf().clear()
+    plt.close()
+    f, axes = plt.subplots(2,3, figsize = (24,16))
     a1,a2,a3,a4,a5,a6 = axes.reshape(6)
     save_plot(parameters, listener,tags=['train'], name='style_score', title='Evolution of the style loss over epochs', ax = a1)
     save_plot(parameters, listener,tags=['train'], name='content_score', title='Evolution of the content loss over epochs', ax = a2)

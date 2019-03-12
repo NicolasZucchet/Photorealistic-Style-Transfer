@@ -119,7 +119,7 @@ def parse_args(prog = sys.argv[1:]):
         args.num_epochs = 1
         args.content_layers = ["conv0_1"]
         args.style_layers = ["conv0_2"]
-        args.base_model = "quick"
+        # args.base_model = "quick"
         if args.save_name == "":
             args.save_name = "quick test"
 
