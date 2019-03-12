@@ -32,7 +32,7 @@ def save_plot(parameters, logger, tags=['train'], name='epoch_time', title='', l
         else:
             ax.plot(epochs, curr_line) 
 
-    plt.set_xlabel('epochs')
+    ax.set_xlabel('epochs')
     ax.set_title('{} - {}'.format(title, parameters.name))
     # plt.legend(labels=labels)
 
