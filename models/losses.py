@@ -17,9 +17,9 @@ class ExperimentLosses():
         self.reg_weight = reg_weight
         self.style_weight = style_weight
         self.content_weight = content_weight
-        self.current_style_score = 0
-        self.current_content_score = 0
-        self.current_reg_score = 0
+        self.current_style_score = None
+        self.current_content_score = None
+        self.current_reg_score = None
         self.backwards_done = False
         self.device = device
 

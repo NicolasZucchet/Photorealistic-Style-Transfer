@@ -3,6 +3,7 @@ from args import parse_args
 import datetime
 import time
 import logging
+import sys
 
 from models import get_model_and_losses
 from toolbox import get_experiment_parameters, configure_logger, get_optimizer, get_experiment, save_all, save_images, generate_plots
@@ -10,35 +11,12 @@ from metrics import get_listener
 
 from toolbox.image_preprocessing import plt_images
 
-def manual_mode(query):
-    query = query.split(" ")[1:]
+def create_experience(query = None):
+    if query is None:
+        query = sys.argv[1:]
+    else:
+        query = query.split(" ")[1:]
     args = parse_args(prog=query)
-    parameters = get_experiment_parameters(args)
-    parameters.disp()
-
-    configure_logger(parameters.res_dir+"experiment.log")
-    log = logging.getLogger("main")
-
-    experiment = get_experiment(parameters)
-
-
-    listener = get_listener(parameters.no_metrics,parameters.resume_model,parameters.load_listener_path)
-    log.info("experiment and listener objects created")
-
-    model, losses =  get_model_and_losses(experiment, parameters, experiment.content_image)
-    log.info("model and losses objects created")
-
-    optimizer, scheduler = get_optimizer(experiment, parameters, losses)
-    log.info("optimizer and scheduler objects created")
-
-    log.info('Experiment ' + parameters.save_name+ ' started on {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
-
-    return {"parameters":parameters, "log":log, "experiment":experiment, "listener":listener, "model":model, "losses":losses, "optimizer":optimizer}
-
-def main():
-
-    args = parse_args()
-
     parameters = get_experiment_parameters(args)
     parameters.disp()
 
@@ -60,7 +38,16 @@ def main():
     log.info('Experiment ' + parameters.save_name+ ' started on {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
     if parameters.resume_model:
         log.info('Experiment was recovered from {}'.format(parameters.load_name))
-    # log.info('Expirment parameters: '+''.join([str(k)+" : "+str(v)+"; " for k, v in parameters.__dict__.items()]))
+
+    return {"parameters":parameters, "log":log, "experiment":experiment, "listener":listener, "model":model, "losses":losses, "optimizer":optimizer, "scheduler":scheduler}
+
+
+def run_experience(experiment, model, parameters, losses, optimizer, scheduler, listener, log):
+
+    # initialize the losses with a forward pass
+    experiment.input_image.data.clamp_(0, 1)
+    optimizer.zero_grad()
+    model.forward(experiment.input_image)
 
     while experiment.local_epoch < parameters.num_epochs :
 
@@ -114,7 +101,22 @@ def main():
             return total_score
         
         optimizer.step(closure)
-    
+
+def main():
+
+    experience = create_experience()
+
+    parameters = experience["parameters"]
+    experiment = experience["experiment"]
+    listener = experience["listener"]
+    log = experience["log"]
+    optimizer = experience["optimizer"]
+    losses = experience["losses"]
+    model = experience["model"] 
+    scheduler = experience["scheduler"]
+
+    run_experience(experiment, model, parameters, losses, optimizer, scheduler, listener, log)
+
     print()
 
     experiment.input_image.data.clamp_(0, 1)
@@ -133,6 +135,9 @@ def main():
         generate_plots(parameters, listener)
 
     print("All done")
+
+
+
 
 
 if __name__=="__main__":

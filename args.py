@@ -61,7 +61,7 @@ def parse_args(prog = sys.argv[1:]):
                         help='the optimizer weight decay (used only for adam)')
 
     # scheduler settings
-    parser.add_argument('-scheduler', default="plateau", type=str,
+    parser.add_argument('-scheduler', default="step", type=str,
                         help='the type of lr scheduler used (step,exponential,plateau) ')
     parser.add_argument('-lr_step', default=int(100), type=int,
                         help='the epoch step between learning rate drops (for StepScheduler and Plateau)')
@@ -97,7 +97,7 @@ def parse_args(prog = sys.argv[1:]):
     
     args.__delattr__("resume")
 
-    args.imsize = (512,512) if args.device == "cuda" else (128,128)
+    args.imsize = (512,512) if args.device == "cuda" else (32,32)
 
     args.verbose = not(args.quiet)
     args.__delattr__("quiet")
