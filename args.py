@@ -97,7 +97,7 @@ def parse_args(prog = sys.argv[1:]):
     
     args.__delattr__("resume")
 
-    args.imsize = (512,512) if args.device == "cuda" else (32,32)
+    args.imsize = (512,512) if args.device == "cuda" else (128,128)
 
     args.verbose = not(args.quiet)
     args.__delattr__("quiet")
