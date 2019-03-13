@@ -11,13 +11,14 @@ from metrics import get_listener
 
 from toolbox.image_preprocessing import plt_images
 
-def create_experience(query = None):
-    if query is None:
-        query = sys.argv[1:]
-    else:
-        query = query.split(" ")[1:]
-    args = parse_args(prog=query)
-    parameters = get_experiment_parameters(args)
+def create_experience(query = None, parameters = None):
+    if parameters is None:
+        if query is None:
+            query = sys.argv[1:]
+        else:
+            query = query.split(" ")[1:]
+        args = parse_args(prog=query)
+        parameters = get_experiment_parameters(args)
     parameters.disp()
 
     configure_logger(parameters.res_dir+"experiment.log")
