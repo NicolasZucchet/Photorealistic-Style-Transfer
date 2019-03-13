@@ -29,6 +29,11 @@ def get_optimizer_scheduler(experience,parameters,losses = None):
     elif 'lbfgs' == parameters.optimizer:
         optimizer = torch.optim.LBFGS([experience.input_image.requires_grad_()],
                             lr=parameters.lr)
+    elif 'rmsprop' == parameters.optimizer:
+        optimizer = torch.optim.RMSprop([experience.input_image.requires_grad_()],
+                            lr=parameters.lr,
+                            weight_decay = parameters.weight_decay,
+                            momentum = parameters.momentum)
     
     else:
         raise 'Optimizer {} not available'.format(parameters.optimizer)
