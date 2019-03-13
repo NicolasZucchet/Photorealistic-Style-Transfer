@@ -22,7 +22,7 @@ def parse_args(prog = sys.argv[1:]):
     # images to use
     parser.add_argument('-style_image', default='1', type=str, help='ID of the style image to use')
     parser.add_argument('-content_image', default='1', type=str, help='ID of the content image to use')
-    parser.add_argument('-input_image', default='content', type=str, help='Which image should be used as initial input image : content, style, white, white noise')
+    parser.add_argument('-input_image', default='content', type=str, help='Which image should be used as initial input image : content, style, white, noise')
     parser.add_argument('-imsize', default=512, type=int, help='size to which the images should be resized (on cpu, default will be 32)')
 
 
