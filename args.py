@@ -54,11 +54,11 @@ def parse_args(prog = sys.argv[1:]):
     # optimizer settings
     parser.add_argument('-optimizer', default="rmsprop", type=str,
                         help='the optimizer that should be used (adam, sgd, lbfgs, rmsprop')
-    parser.add_argument('-lr', default=int(1e-2), type=float,
+    parser.add_argument('-lr', default=1e-2, type=float,
                         help='the learning rate for the optimizer')
-    parser.add_argument('-momentum', default=int(0.2), type=float,
+    parser.add_argument('-momentum', default=0.2, type=float,
                         help='the optimizer momentum (used only for adam and sgd')
-    parser.add_argument('-weight_decay', default=int(1e-3), type=float,
+    parser.add_argument('-weight_decay', default=1e-3, type=float,
                         help='the optimizer weight decay (used only for adam)')
 
     # scheduler settings
