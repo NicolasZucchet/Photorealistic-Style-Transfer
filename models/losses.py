@@ -59,7 +59,7 @@ class ExperimentLosses():
         if self.backwards_done:
             raise Exception("Backwards propagation has already been computed")
         loss = self.current_content_score + self.current_style_score
-        loss.backward()
+        loss.backward(retain_graph = True) # new error popped up asking for this....
         self.backwards_done = True
 
 
