@@ -83,7 +83,7 @@ def parse_args(prog = sys.argv[1:]):
     else:
         args.no_log = False
     
-    args.reg = not(args.no_reg)
+    args.reg = not(args.no_reg) and args.reg_weight>0
     args.__delattr__("no_reg")
 
     args.save_model = not(args.no_save)
