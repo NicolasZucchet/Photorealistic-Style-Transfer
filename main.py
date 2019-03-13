@@ -73,7 +73,7 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             total_score += content_score
             meters["content_score"].update(content_score.item())
 
-            losses.backward()
+            losses.backward(retain_graph = True) # new error popped up asking for this....
 
             if parameters.reg:
                 reg_score = losses.compute_reg_score(experiment.input_image)  
