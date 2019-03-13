@@ -17,9 +17,9 @@ class ExperimentLosses():
         self.reg_weight = reg_weight
         self.style_weight = style_weight
         self.content_weight = content_weight
-        self.current_style_score = None
-        self.current_content_score = None
-        self.current_reg_score = None
+        self.current_style_loss = None
+        self.current_content_loss = None
+        self.current_reg_loss = None
         self.backwards_done = False
         self.device = device
 
@@ -38,27 +38,24 @@ class ExperimentLosses():
     def compute_content_loss(self):
         if len(self.content_losses)==0:
             raise Exception("wtf")
-        return sum(map(lambda x: x.loss, self.content_losses))
-    
-    def compute_content_score(self):
-        self.current_content_score = self.compute_content_loss() * self.content_weight
+        # self.current_content_loss = sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
         self.backwards_done = False
-        return self.current_content_score
+        # return self.current_content_loss
+        return sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
 
     def compute_style_loss(self):
-        return sum(map(lambda x: x.loss, self.style_losses))
-    
-    def compute_style_score(self):
         if len(self.style_losses)==0:
             raise Exception("wtf")
-        self.current_style_score = self.compute_style_loss() * self.style_weight
+        # self.current_style_loss = sum(map(lambda x: x.loss, self.style_losses)) * self.style_weight
         self.backwards_done = False
-        return self.current_style_score
+        # return self.current_style_loss
+        return sum(map(lambda x: x.loss, self.style_losses)) * self.style_weight
 
     def backward(self):
+        raise Exception("Method is deprecated")
         if self.backwards_done:
             raise Exception("Backwards propagation has already been computed")
-        loss = self.current_content_score + self.current_style_score
+        loss = self.current_content_loss + self.current_style_loss
         loss.backward(retain_graph = True) # new error popped up asking for this....
         self.backwards_done = True
 
@@ -75,15 +72,15 @@ class ExperimentLosses():
         return loss, new_grad
 
 
-    def compute_reg_score(self,input_image):
+    def compute_reg_loss(self,input_image):
         reg_loss, reg_grad = self.regularization_grad(input_image)
         reg_grad_tensor = image_to_tensor(reg_grad,device=self.device)
         input_image.grad += self.reg_weight * reg_grad_tensor # DOES THIS UPDATE THE IMAGE GLOBALY ? 
-        self.current_reg_score = self.reg_weight * reg_loss
-        return self.current_reg_score
+        self.current_reg_loss = self.reg_weight * reg_loss
+        return self.current_reg_loss
     
     def total_loss(self):
-        return self.current_content_score.item() + self.current_reg_score.item() + self.current_style_score.item()
+        return self.current_content_loss.item() + self.current_reg_loss.item() + self.current_style_loss.item()
 
 class ContentLoss(nn.Module):
     """

@@ -6,7 +6,7 @@ import logging
 import sys
 
 from models import get_model_and_losses
-from toolbox import get_experiment_parameters, configure_logger, get_optimizer, get_experiment, save_all, save_images, generate_plots
+from toolbox import get_experiment_parameters, configure_logger, get_optimizer, get_experiment, save_all, save_images, generate_plots, emptyLogger
 from metrics import get_listener
 
 from toolbox.image_preprocessing import plt_images
@@ -20,11 +20,14 @@ def create_experience(query = None, parameters = None):
         args = parse_args(prog=query)
     
         parameters = get_experiment_parameters(args)
-        
+
     parameters.disp()
 
-    configure_logger(parameters.res_dir+"experiment.log")
-    log = logging.getLogger("main")
+    if not(parameters.ghost):
+        configure_logger(parameters.res_dir+"experiment.log")
+        log = logging.getLogger("main")
+    else:
+        log = emptyLogger()
 
     experiment = get_experiment(parameters)
 
@@ -68,28 +71,27 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             model.forward(experiment.input_image)
             
 
-            style_score = losses.compute_style_score()
-            total_score = style_score
-            meters["style_score"].update(style_score.item())
+            style_loss = losses.compute_style_loss()
+            # total_loss = style_loss
+            meters["style_loss"].update(style_loss.item())
 
-            content_score = losses.compute_content_score()
-            total_score += content_score
-            meters["content_score"].update(content_score.item())
+            content_loss = losses.compute_content_loss()
+            # total_loss += content_loss
+            meters["content_loss"].update(content_loss.item())
 
-            losses.backward()
+            (content_loss+style_loss).backward(retain_graph = True)
 
             if parameters.reg:
-                reg_score = losses.compute_reg_score(experiment.input_image)  
-                total_score += reg_score
-                meters["reg_score"].update(reg_score.item())
+                reg_loss = losses.compute_reg_loss(experiment.input_image)
+                meters["reg_loss"].update(reg_loss.item())
 
-            meters["total_score"].update(total_score.item())
+            meters["total_loss"].update(reg_loss.item()+style_loss.item()+ reg_loss.item() if parameters.reg else 0)
 
-            if experiment.epoch%20==0 or parameters.verbose:
+            if parameters.verbose:
                     print(
-                    "\repoch {:>4d}:".format(experiment.epoch),
-                    "S: {:.3f} C: {:.3f} R: {:.3f}".format(
-                        style_score.item(), content_score.item(), reg_score.item() if parameters.reg else 0
+                    "\repoch {}:".format(experiment.epoch),
+                    "S: {:.5f} C: {:.5f} R: {:.5f}".format(
+                        style_loss.item(), content_loss.item(), reg_loss.item() if parameters.reg else 0
                         ),
                     end = "")
 
@@ -101,7 +103,7 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             meters["epoch_time"].update(time.time()-start_time)        
             listener.log_meters("train",experiment.epoch)
             
-            return total_score
+            return reg_loss + style_loss + reg_loss if parameters.reg else 0
         
         optimizer.step(closure)
 
