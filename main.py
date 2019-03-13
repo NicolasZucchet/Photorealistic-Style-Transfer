@@ -38,7 +38,7 @@ def create_experience(query = None, parameters = None):
     model, losses =  get_model_and_losses(experiment, parameters, experiment.content_image)
     log.info("model and losses objects created")
 
-    optimizer, scheduler = get_optimizer(experiment, parameters, losses)
+    optimizer, scheduler = get_optimizer(experiment, parameters)
     log.info("optimizer and scheduler objects created")
 
     log.info('Experiment ' + parameters.save_name+ ' started on {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
@@ -95,7 +95,10 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
                         ),
                     end = "")
 
-            scheduler.step()
+            if parameters.scheduler == "plateau":
+                scheduler.step(style_loss.item()+content_loss.item()+reg_loss.item() if parameters.reg else 0)
+            else:
+                scheduler.step()
             meters["lr"].update(optimizer.state_dict()['param_groups'][0]['lr'])
             experiment.local_epoch += 1
             experiment.epoch += 1

@@ -13,7 +13,7 @@ def get_optim_parameters(model):
     for param in model.parameters():
         yield param
 
-def get_optimizer_scheduler(experience,parameters,losses = None):
+def get_optimizer_scheduler(experience,parameters):
     log = logging.getLogger("main")
 
     if 'sgd' == parameters.optimizer:
@@ -46,11 +46,8 @@ def get_optimizer_scheduler(experience,parameters,losses = None):
         log.info(f' --- Setting lr scheduler to ExponentialLR ---')
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=parameters.lr_decay)    
     elif 'plateau' == parameters.scheduler:
-        if losses is None:
-            raise Exception("Losses must be provided for plateau loss to work")
         log.info(f' --- Setting lr scheduler to ReduceLROnPlateau ---') 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=parameters.lr_decay, patience=parameters.lr_step)
-        scheduler = PlateauScheduling(scheduler,losses)
     elif 'adjusted' == parameters.scheduler:
         scheduler = Adjust_lr(experience,optimizer,parameters)
     elif 'none' == parameters.scheduler:
@@ -59,18 +56,6 @@ def get_optimizer_scheduler(experience,parameters,losses = None):
         raise f'Scheduler {parameters.scheduler} not available'
     
     return optimizer,scheduler
-
-
-class PlateauScheduling():
-    # this class is made only because not all schedulers have the same step function (Plateau requires a "metrics" argument)
-    # we don't want the specificiy to appear in our code. We thus encapsulate these schedulers by defining a default step function inside this class
-
-    def __init__(self,scheduler, losses):
-        self.scheduler = scheduler
-        self.value = losses.total_loss
-    
-    def step(self):
-        self.scheduler.step(self.value())
 
 
 class Adjust_lr():

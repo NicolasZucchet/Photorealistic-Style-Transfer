@@ -20,7 +20,7 @@ class ExperimentLosses():
         self.current_style_loss = None
         self.current_content_loss = None
         self.current_reg_loss = None
-        self.backwards_done = False
+        # self.backwards_done = False
         self.device = device
 
         if reg_weight > 0 :
@@ -36,18 +36,18 @@ class ExperimentLosses():
         self.style_losses.append(loss)
     
     def compute_content_loss(self):
-        if len(self.content_losses)==0:
-            raise Exception("wtf")
+        # if len(self.content_losses)==0:
+            # raise Exception("wtf")
         # self.current_content_loss = sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
-        self.backwards_done = False
+        # self.backwards_done = False
         # return self.current_content_loss
         return sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
 
     def compute_style_loss(self):
-        if len(self.style_losses)==0:
-            raise Exception("wtf")
+        # if len(self.style_losses)==0:
+            # raise Exception("wtf")
         # self.current_style_loss = sum(map(lambda x: x.loss, self.style_losses)) * self.style_weight
-        self.backwards_done = False
+        # self.backwards_done = False
         # return self.current_style_loss
         return sum(map(lambda x: x.loss, self.style_losses)) * self.style_weight
 
@@ -79,8 +79,8 @@ class ExperimentLosses():
         self.current_reg_loss = self.reg_weight * reg_loss
         return self.current_reg_loss
     
-    def total_loss(self):
-        return self.current_content_loss.item() + self.current_reg_loss.item() + self.current_style_loss.item()
+    def compute_total_loss(self):
+        return self.compute_content_loss.item() + self.compute_reg_loss.item() + self.compute_style_loss.item()
 
 class ContentLoss(nn.Module):
     """
@@ -90,7 +90,7 @@ class ContentLoss(nn.Module):
     def __init__(self, target, weight = 1):
         super(ContentLoss, self).__init__()
         self.target = target.detach()
-        self.loss = -1
+        self.loss = torch.zeros(1)
         self.weight = weight
 
     def forward(self, input):
@@ -105,8 +105,8 @@ class StyleLoss(nn.Module):
 
     def __init__(self, target_feature, weight = 1):
         super(StyleLoss, self).__init__()
-        self.target = gram_matrix(target_feature).detach() # detaches from the graph. New object is linked to old one but will never require grad
-        self.loss = -1
+        self.target = gram_matrix(target_feature).detach()
+        self.loss = torch.zeros(1)
         self.weight = weight
 
     def forward(self, input):
@@ -126,7 +126,7 @@ class AugmentedStyleLoss(nn.Module):
         self.targets = [
             gram_matrix(target_feature * mask).detach() for mask in target_masks
         ]
-        self.loss = -1
+        self.loss = torch.zeros(1)
         self.weight = weight
 
     def forward(self, input):
@@ -144,4 +144,4 @@ def gram_matrix(input):
     features = input.view(B * C, H * W)
     gram = torch.mm(features, features.t())
 
-    return gram.div(B * C * H * W) # division by float
+    return gram.div(B * C * H * W)

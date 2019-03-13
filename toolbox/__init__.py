@@ -11,8 +11,8 @@ from toolbox.plotter import save_plot
 def get_experiment_parameters(args):
     return Experiment_parameters(args)
 
-def get_optimizer(experience,parameters,losses = None):
-    return get_optimizer_scheduler(experience,parameters,losses = losses)
+def get_optimizer(experience,parameters):
+    return get_optimizer_scheduler(experience,parameters)
 
 def configure_logger(path):
     logging.basicConfig(filename=path,format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO)
