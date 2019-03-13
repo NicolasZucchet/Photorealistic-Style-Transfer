@@ -14,7 +14,16 @@ class Experiment():
 		# images
         self.style_image = image_loader(parameters.style_image_path, parameters.imsize).to(parameters.device, torch.float)
         self.content_image = image_loader(parameters.content_image_path, parameters.imsize).to(parameters.device, torch.float)
-        self.input_image = self.content_image.clone()
+        if parameters.input_image == "content":
+		self.input_image = self.content_image.clone()
+	elif parameters.input_image == "style":
+		self.input_image = self.content_image.clone()
+	elif parameters.input_image == "white":
+		self.input_image = self.content_image.clone()
+		self.input_image.fill_(1)
+	elif parameters.input_image == "noise":
+		self.input_image = self.content_image.clone()
+		self.input_image.random_(0,1000).div_(1000)
         log.info("images loaded")
 
 		# masks

@@ -22,6 +22,7 @@ def parse_args(prog = sys.argv[1:]):
     # images to use
     parser.add_argument('-style_image', default='1', type=str, help='ID of the style image to use')
     parser.add_argument('-content_image', default='1', type=str, help='ID of the content image to use')
+    parser.add_argument('-input_image', default='content', type=str, help='Which image should be used as initial input image : content, style, white, noise')
     parser.add_argument('-imsize', default=512, type=int, help='size to which the images should be resized (on cpu, default will be 32)')
 
 
@@ -52,13 +53,13 @@ def parse_args(prog = sys.argv[1:]):
                         help='the weight given to the regularization loss')
 
     # optimizer settings
-    parser.add_argument('-optimizer', default="lbfgs", type=str,
-                        help='the optimizer that should be used (adam, sgd, lbfgs')
-    parser.add_argument('-lr', default=int(1), type=float,
+    parser.add_argument('-optimizer', default="rmsprop", type=str,
+                        help='the optimizer that should be used (adam, sgd, lbfgs, rmsprop')
+    parser.add_argument('-lr', default=1e-2, type=float,
                         help='the learning rate for the optimizer')
-    parser.add_argument('-momentum', default=int(0.9), type=float,
+    parser.add_argument('-momentum', default=0.2, type=float,
                         help='the optimizer momentum (used only for adam and sgd')
-    parser.add_argument('-weight_decay', default=int(1e-3), type=float,
+    parser.add_argument('-weight_decay', default=1e-3, type=float,
                         help='the optimizer weight decay (used only for adam)')
 
     # scheduler settings
@@ -83,7 +84,7 @@ def parse_args(prog = sys.argv[1:]):
     else:
         args.no_log = False
     
-    args.reg = not(args.no_reg)
+    args.reg = not(args.no_reg) and args.reg_weight>0
     args.__delattr__("no_reg")
 
     args.save_model = not(args.no_save)
