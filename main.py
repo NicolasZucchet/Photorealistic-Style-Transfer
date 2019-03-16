@@ -79,36 +79,17 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             meters["content_loss"].update(content_loss.item())
 
             tv_loss = losses.compute_tv_loss()
-            meters["tv_loss"].update(content_loss.item())
+            meters["tv_loss"].update(tv_loss.item())
 
-            # Two stage optimization pipline
-            if experiment.local_epoch > parameters.num_epochs // 2:
-                # realistic loss computing in the second part of the pipeline
-                reg_loss = losses.compute_reg_loss(experiment.input_image)
-                meters["reg_loss"].update(reg_loss.item())
+            reg_loss = losses.compute_reg_loss(experiment.input_image)
+            meters["reg_loss"].update(reg_loss.item())
 
-                loss = style_loss + content_loss + tv_loss + reg_loss
+            loss = style_loss + content_loss + tv_loss + reg_loss
 
-                # Store the best result for outputing
-                if loss < best_loss:
-                    # print(best_loss)
-                    best_loss = loss
-                    best_input = experiment.input_image.data.clone()
-            else:
-                loss = style_loss + content_loss + tv_loss
-
-                reg_loss = 0
-                meters["reg_loss"].update(0)
-
-                if loss < best_loss and experiment.local_epoch > 0:
-                    # print(best_loss)
-                    best_loss = loss
-                    best_input = experiment.input_image.data.clone()
-
-                if experiment.local_epoch == parameters.num_epochs // 2:
-                    # Store the best temp result to initialize second stage input
-                    experiment.input_image.data = best_input
-                    best_loss = 1e10
+            # Store the best result for outputing
+            if loss < best_loss:
+                best_loss = loss
+                best_input = experiment.input_image.data.clone()
 
             loss.backward()
 

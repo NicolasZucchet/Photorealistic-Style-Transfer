@@ -43,6 +43,7 @@ def generate_plots(parameters, listener):
     save_plot(parameters, listener,tags=['train'], name='style_loss', title='Evolution of the style loss over epochs', ax = a1)
     save_plot(parameters, listener,tags=['train'], name='content_loss', title='Evolution of the content loss over epochs', ax = a2)
     save_plot(parameters, listener,tags=['train'], name='reg_loss', title='Evolution of the regularization loss over epochs', ax = a3)
+    save_plot(parameters, listener,tags=['train'], name='tv_loss', title='Evolution of the tv loss over epochs', ax = a3)
     save_plot(parameters, listener,tags=['train'], name='total_loss', title='Evolution of the total loss over epochs', ax = a4)
     save_plot(parameters, listener,tags=['train'], name='epoch_time', title='Evolution of the epoch time over epochs', ax = a5)
     save_plot(parameters, listener,tags=['train'], name='lr', title='Evolution of the learning rate over epochs', ax = a6)
