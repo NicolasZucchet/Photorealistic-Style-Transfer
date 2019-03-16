@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import numpy as np
 from models.closed_form_matting import compute_laplacian
 from toolbox.image_preprocessing import tensor_to_image, image_to_tensor
 import logging
@@ -10,17 +11,21 @@ log = logging.getLogger("main")
 
 class ExperimentLosses():
 
-    def __init__(self, content_weight, style_weight, reg_weight, content_image = None, device = 'cpu'):
+    def __init__(self, content_weight, style_weight, reg_weight, tv_weight, content_image = None, device = 'cpu'):
         self.content_losses = []
         self.style_losses = []
         self.reg_losses = []
+        self.tv_losses = []
+
         self.reg_weight = reg_weight
         self.style_weight = style_weight
         self.content_weight = content_weight
+        self.tv_weight = tv_weight
+
         self.current_style_loss = None
         self.current_content_loss = None
         self.current_reg_loss = None
-        # self.backwards_done = False
+
         self.device = device
 
         if reg_weight > 0 :
@@ -29,48 +34,16 @@ class ExperimentLosses():
             self.L = compute_laplacian(tensor_to_image(content_image))
             log.info("laplacian computed")
 
+
     def add_content_loss(self,loss):
         self.content_losses.append(loss)
+    def compute_content_loss(self):
+        return sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
     
     def add_style_loss(self,loss):
         self.style_losses.append(loss)
-    
-    def compute_content_loss(self):
-        # if len(self.content_losses)==0:
-            # raise Exception("wtf")
-        # self.current_content_loss = sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
-        # self.backwards_done = False
-        # return self.current_content_loss
-        return sum(map(lambda x: x.loss, self.content_losses)) * self.content_weight
-
     def compute_style_loss(self):
-        # if len(self.style_losses)==0:
-            # raise Exception("wtf")
-        # self.current_style_loss = sum(map(lambda x: x.loss, self.style_losses)) * self.style_weight
-        # self.backwards_done = False
-        # return self.current_style_loss
         return sum(map(lambda x: x.loss, self.style_losses)) * self.style_weight
-
-    def backward(self):
-        raise Exception("Method is deprecated")
-        if self.backwards_done:
-            raise Exception("Backwards propagation has already been computed")
-        loss = self.current_content_loss + self.current_style_loss
-        loss.backward(retain_graph = True) # new error popped up asking for this....
-        self.backwards_done = True
-
-
-    def regularization_grad(self, input_image):
-        """
-        Photorealistic regularization
-        See Luan et al. for the details.
-        """
-        im = tensor_to_image(input_image)
-        grad = self.L.dot(im.reshape(-1, 3))
-        loss = (grad * im.reshape(-1, 3)).sum()
-        new_grad = 2. * grad.reshape(*im.shape)
-        return loss, new_grad
-
 
     def compute_reg_loss(self,input_image):
         reg_loss, reg_grad = self.regularization_grad(input_image)
@@ -78,15 +51,26 @@ class ExperimentLosses():
         input_image.grad += self.reg_weight * reg_grad_tensor # DOES THIS UPDATE THE IMAGE GLOBALY ? 
         self.current_reg_loss = self.reg_weight * reg_loss
         return self.current_reg_loss
+    def regularization_grad(self, input_image):
+        """
+        Photorealistic regularization
+        """
+        im = tensor_to_image(input_image)
+        grad = self.L.dot(im.reshape(-1, 3))
+        loss = (grad * im.reshape(-1, 3)).sum()
+        new_grad = 2. * grad.reshape(*im.shape)
+        return loss, new_grad
+
+    def add_tv_loss(self,loss):
+        self.tv_losses.append(loss)
+    def compute_tv_loss(self):
+        return sum(map(lambda x: x.loss, self.tv_losses)) * self.tv_weight
     
     def compute_total_loss(self):
         return self.compute_content_loss.item() + self.compute_reg_loss.item() + self.compute_style_loss.item()
 
-class ContentLoss(nn.Module):
-    """
-    See Gatys et al. for the details.
-    """
 
+class ContentLoss(nn.Module):
     def __init__(self, target, weight = 1):
         super(ContentLoss, self).__init__()
         self.target = target.detach()
@@ -99,27 +83,105 @@ class ContentLoss(nn.Module):
             
 
 class StyleLoss(nn.Module):
-    """
-    See Gatys et al. for the details.
-    """
 
-    def __init__(self, target_feature, weight = 1):
+    def __init__(self, target_feature, style_mask, content_mask,device):
         super(StyleLoss, self).__init__()
-        self.target = gram_matrix(target_feature).detach()
-        self.loss = torch.zeros(1)
-        self.weight = weight
+
+        self.device = device
+
+        self.style_mask = style_mask.detach()
+        self.content_mask = content_mask.detach()
+
+        _, channel_f, height, width = target_feature.size()
+        channel = self.style_mask.size()[0]
+
+        xc = torch.linspace(-1, 1, width).repeat(height, 1)
+        yc = torch.linspace(-1, 1, height).view(-1, 1).repeat(1, width)
+        grid = torch.cat((xc.unsqueeze(2), yc.unsqueeze(2)), 2)
+        grid = grid.unsqueeze_(0).to(self.device)
+        mask_ = F.grid_sample(self.style_mask.unsqueeze(0), grid).squeeze(0)
+        target_feature_3d = target_feature.squeeze(0).clone()
+        size_of_mask = (channel, channel_f, height, width)
+        target_feature_masked = torch.zeros(size_of_mask, dtype=torch.float).to(self.device)
+        for i in range(channel):
+            target_feature_masked[i, :, :, :] = mask_[i, :, :] * target_feature_3d
+
+        self.targets = list()
+        for i in range(channel):
+            if torch.mean(mask_[i, :, :]) > 0.0:
+                temp = target_feature_masked[i, :, :, :]
+                self.targets.append(gram_matrix(temp.unsqueeze(0)).detach() / torch.mean(mask_[i, :, :]))
+            else:
+                self.targets.append(gram_matrix(temp.unsqueeze(0)).detach())
+
+    def forward(self, input_feature):
+        self.loss = 0
+        _, channel_f, height, width = input_feature.size()
+        # channel = self.content_mask.size()[0]
+        channel = len(self.targets)
+        # ****
+        xc = torch.linspace(-1, 1, width).repeat(height, 1)
+        yc = torch.linspace(-1, 1, height).view(-1, 1).repeat(1, width)
+        grid = torch.cat((xc.unsqueeze(2), yc.unsqueeze(2)), 2)
+        grid = grid.unsqueeze_(0).to(self.device)
+        mask = F.grid_sample(self.content_mask.unsqueeze(0), grid).squeeze(0)
+        # ****
+        # mask = self.content_mask.data.resize_(channel, height, width).clone()
+        input_feature_3d = input_feature.squeeze(0).clone()
+        size_of_mask = (channel, channel_f, height, width)
+        input_feature_masked = torch.zeros(size_of_mask, dtype=torch.float32).to(self.device)
+        for i in range(channel):
+            input_feature_masked[i, :, :, :] = mask[i, :, :] * input_feature_3d
+
+        inputs_G = list()
+        for i in range(channel):
+            temp = input_feature_masked[i, :, :, :]
+            mask_mean = torch.mean(mask[i, :, :])
+            if mask_mean > 0.0:
+                inputs_G.append(gram_matrix(temp.unsqueeze(0)) / mask_mean)
+            else:
+                inputs_G.append(gram_matrix(temp.unsqueeze(0)))
+        for i in range(channel):
+            mask_mean = torch.mean(mask[i, :, :])
+            self.loss += F.mse_loss(inputs_G[i], self.targets[i]) * mask_mean
+
+        return input_feature
+
+
+# Smoothness loss
+class TVLoss(nn.Module):
+
+    def __init__(self,device):
+        super(TVLoss, self).__init__()
+
+        self.device = device
+
+        self.ky = np.array([
+            [[0, 0, 0],[0, 1, 0],[0,-1, 0]],
+            [[0, 0, 0],[0, 1, 0],[0,-1, 0]],
+            [[0, 0, 0],[0, 1, 0],[0,-1, 0]]
+        ])
+        self.kx = np.array([
+            [[0, 0, 0],[0, 1,-1],[0, 0, 0]],
+            [[0, 0, 0],[0, 1,-1],[0, 0, 0]],
+            [[0, 0, 0],[0, 1,-1],[0, 0, 0]]
+        ])
+        self.conv_x = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv_x.weight = nn.Parameter(torch.from_numpy(self.kx).float().unsqueeze(0).to(self.device),
+                                          requires_grad=False)
+        self.conv_y = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv_y.weight = nn.Parameter(torch.from_numpy(self.ky).float().unsqueeze(0).to(self.device),
+                                          requires_grad=False)
 
     def forward(self, input):
-        gram = gram_matrix(input)
-        self.loss = self.weight * F.mse_loss(gram, self.target)
+        gx = self.conv_x(input)
+        gy = self.conv_y(input)
+
+        self.loss = torch.sum(gx**2 + gy**2)/2.0
         return input
 
-class AugmentedStyleLoss(nn.Module):
-    """
-    AugmentedStyleLoss exploits the semantic information of images.
-    See Luan et al. for the details.
-    """
 
+class AugmentedStyleLoss(nn.Module):
     def __init__(self, target_feature, target_masks, input_masks, weight = 1):
         super(AugmentedStyleLoss, self).__init__()
         self.input_masks = [mask.detach() for mask in input_masks]
@@ -138,6 +200,7 @@ class AugmentedStyleLoss(nn.Module):
             for gram, target in zip(gram_matrices, self.targets)
         )
         return input
+
 
 def gram_matrix(input):
     B, C, H, W = input.size()

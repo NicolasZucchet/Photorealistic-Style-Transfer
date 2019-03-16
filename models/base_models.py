@@ -13,7 +13,7 @@ class QuickModel(nn.Module):
         normalization_mean = torch.tensor([1,1,1]).to(parameters.device,torch.float)
         normalization_std = torch.tensor([1,1,1]).to(parameters.device,torch.float)
         normalization = Normalization(normalization_mean, normalization_std).to(parameters.device)
-        model.add_module("normalizatoin",normalization)
+        model.add_module("normalization",normalization)
         model.add_module("quick_loss_style", nn.Conv2d(3,3,5).to(parameters.device))
         model.add_module("quick_loss_content", nn.Conv2d(3,3,5).to(parameters.device))
         self.model = model
