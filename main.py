@@ -10,6 +10,7 @@ from toolbox import get_experiment_parameters, configure_logger, get_optimizer, 
 from metrics import get_listener
 
 from toolbox.image_preprocessing import plt_images
+from torch.nn.utils import clip_grad_norm
 
 def create_experience(query = None, parameters = None):
     if parameters is None:
@@ -32,7 +33,7 @@ def create_experience(query = None, parameters = None):
     experiment = get_experiment(parameters)
 
 
-    listener = get_listener(parameters.no_metrics,parameters.resume_model,parameters.load_listener_path)
+    listener = get_listener(parameters.no_metrics)
     log.info("experiment and listener objects created")
 
     model, losses =  get_model_and_losses(experiment, parameters, experiment.content_image)
@@ -42,8 +43,6 @@ def create_experience(query = None, parameters = None):
     log.info("optimizer and scheduler objects created")
 
     log.info('Experiment ' + parameters.save_name+ ' started on {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
-    if parameters.resume_model:
-        log.info('Experiment was recovered from {}'.format(parameters.load_name))
 
     return {"parameters":parameters, "log":log, "experiment":experiment, "listener":listener, "model":model, "losses":losses, "optimizer":optimizer, "scheduler":scheduler}
 
@@ -55,12 +54,15 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
     optimizer.zero_grad()
     model.forward(experiment.input_image)
 
+    best_loss = 1e10
+    best_input = None
+
     while experiment.local_epoch < parameters.num_epochs :
 
         def closure():
-            """
-            https://pytorch.org/docs/stable/optim.html#optimizer-step-closure
-            """
+            nonlocal best_input
+            nonlocal best_loss
+
             # meta 
             start_time = time.time()
             meters = listener.reset_meters("train")
@@ -69,31 +71,59 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             experiment.input_image.data.clamp_(0, 1)
             optimizer.zero_grad()
             model.forward(experiment.input_image)
-            
 
             style_loss = losses.compute_style_loss()
-            # total_loss = style_loss
             meters["style_loss"].update(style_loss.item())
 
             content_loss = losses.compute_content_loss()
-            # total_loss += content_loss
             meters["content_loss"].update(content_loss.item())
 
-            (content_loss+style_loss).backward(retain_graph = True)
+            tv_loss = losses.compute_tv_loss()
+            meters["tv_loss"].update(content_loss.item())
 
-            if parameters.reg:
+            # Two stage optimization pipline
+            if experiment.local_epoch > parameters.num_epochs // 2:
+                # realistic loss computing in the second part of the pipeline
                 reg_loss = losses.compute_reg_loss(experiment.input_image)
                 meters["reg_loss"].update(reg_loss.item())
 
-            meters["total_loss"].update(reg_loss.item()+style_loss.item()+ reg_loss.item() if parameters.reg else 0)
+                loss = style_loss + content_loss + tv_loss + reg_loss
+
+                # Store the best result for outputing
+                if loss < best_loss:
+                    # print(best_loss)
+                    best_loss = loss
+                    best_input = experiment.input_image.data.clone()
+            else:
+                loss = style_loss + content_loss + tv_loss
+
+                reg_loss = 0
+                meters["reg_loss"].update(0)
+
+                if loss < best_loss and experiment.local_epoch > 0:
+                    # print(best_loss)
+                    best_loss = loss
+                    best_input = experiment.input_image.data.clone()
+
+                if experiment.local_epoch == parameters.num_epochs // 2:
+                    # Store the best temp result to initialize second stage input
+                    experiment.input_image.data = best_input
+                    best_loss = 1e10
+
+            loss.backward()
+
+            meters["total_loss"].update(loss.item())
 
             if parameters.verbose:
                     print(
                     "\repoch {}:".format(experiment.epoch),
-                    "S: {:.5f} C: {:.5f} R: {:.5f}".format(
-                        style_loss.item(), content_loss.item(), reg_loss.item() if parameters.reg else 0
+                    "S: {:.5f} C: {:.5f} R: {:.5f} TV: {:.5f}".format(
+                        style_loss.item(), content_loss.item(), 0 if reg_loss == 0 else reg_loss.item(), tv_loss
                         ),
                     end = "")
+
+            # Gradient cliping deal with gradient exploding
+            clip_grad_norm(model.parameters(), 15.0)
 
             if parameters.scheduler == "plateau":
                 scheduler.step(style_loss.item()+content_loss.item()+reg_loss.item() if parameters.reg else 0)
@@ -106,9 +136,12 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             meters["epoch_time"].update(time.time()-start_time)        
             listener.log_meters("train",experiment.epoch)
             
-            return reg_loss + style_loss + reg_loss if parameters.reg else 0
+            return loss
         
         optimizer.step(closure)
+
+    experiment.input_image.data = best_input
+    experiment.input_image.data.clamp_(0, 1)
 
 def main():
 

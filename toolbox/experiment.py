@@ -33,14 +33,8 @@ class Experiment():
             self.content_masks[i] = self.content_masks[i].to(parameters.device)
         log.info("masks loaded")
 
-        # loading/initialising the epoch counter
-        if parameters.resume_model:
-            self.load()
-            # loads the epoch  (and current loss values in the future!!)
-        else:
-            self.epoch = 0
-
         self.local_epoch = 0
+        self.epoch = 0
         self.log = logging.getLogger("main")
 
         log.info("Finished initialising Experiment")

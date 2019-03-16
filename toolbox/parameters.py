@@ -5,9 +5,6 @@ class Experiment_parameters():
     def __init__(self,args):
         for k,v in args.__dict__.items():
             self.__setattr__(k,v)
-        # self.imsize = (512, 512)
-        if args.resume_model:
-            self.load() 
     
     def disp(self):
         print('----- Experiments Parameters -----')

@@ -77,6 +77,7 @@ def make_meters(empty=False):
         'style_loss': ValueMeter(empty=empty),
         'content_loss': ValueMeter(empty=empty),
         'reg_loss': ValueMeter(empty=empty),
+        'tv_loss': ValueMeter(empty=empty),
         'total_loss': ValueMeter(empty=empty),
         'epoch_time': ValueMeter(empty=empty),
         'lr' : ValueMeter(empty=empty)

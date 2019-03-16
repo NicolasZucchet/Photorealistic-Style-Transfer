@@ -15,17 +15,14 @@ Object of the Listener class keep track of scores and metrics across epochs.
 This data is saved to json files after each epoch. 
 '''
 
-def init_listener(no_metrics = False, resume = False, path = None):
+def init_listener(no_metrics = False, path = None):
     # set listeners
     if no_metrics:
         exp_listener = Empty_listener()
     else:
         exp_listener = Listener()
 
-    if resume:
-        exp_listener.load(path)
-    else:
-        exp_listener.add_meters('train', make_meters(empty=no_metrics))
+    exp_listener.add_meters('train', make_meters(empty=no_metrics))
 
 
     return exp_listener

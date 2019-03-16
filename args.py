@@ -28,13 +28,9 @@ def parse_args(prog = sys.argv[1:]):
 
 
     # resuming
-    parser.add_argument('-resume', default='', type=str, metavar='PATH',
-                        help='resume from a given model by providing its name (can be found in the log) ')
     parser.add_argument('-keep_params', default=False, action='store_true', help='overwrite parameters given by those of the resumed experiment')
 
     # model settings
-    parser.add_argument('-no_reg', default=False, action='store_true', 
-                        help='Disable regularization')
     parser.add_argument('-base_model', default='vgg19', type=str,
                         help='base model to be used for feature extraction')
     parser.add_argument('-device', default='cuda', type=str,
@@ -47,10 +43,12 @@ def parse_args(prog = sys.argv[1:]):
                         help='the number of epochs for this train')
     parser.add_argument('-style_weight', default=1e6, type=float,
                         help='the weight given to the style loss')
-    parser.add_argument('-content_weight', default=1e4, type=float,
+    parser.add_argument('-content_weight', default=1e2, type=float,
                         help='the weight given to the content loss')
-    parser.add_argument('-reg_weight', default=1e-4, type=float,
+    parser.add_argument('-reg_weight', default=1, type=float,
                         help='the weight given to the regularization loss')
+    parser.add_argument('-tv_weight', default=1e-4, type=float,
+                        help='the weight given to the tv loss')
 
     # optimizer settings
     parser.add_argument('-optimizer', default="rmsprop", type=str,
@@ -83,21 +81,9 @@ def parse_args(prog = sys.argv[1:]):
         args.no_metrics = True
     else:
         args.no_log = False
-    
-    args.reg = not(args.no_reg) and args.reg_weight>0
-    args.__delattr__("no_reg")
 
     args.save_model = not(args.no_save)
     args.__delattr__("no_save")
-
-    args.resume_model = args.resume != ""
-
-    if args.resume_model:
-        args.load_name = args.resume
-    else:
-        args.load_name = ""
-    
-    args.__delattr__("resume")
 
     size = args.imsize
     args.imsize = (size,size) if args.device == "cuda" else (32,32)
@@ -130,12 +116,6 @@ def parse_args(prog = sys.argv[1:]):
         raise Exception("You must enter a name for the experiment (-name) or specify that it is a quick experiment (-quick)")
 
     args.res_dir = '{}experiments/{}/'.format(args.work_dir, args.save_name)
-    # args.tmp_dir = '{}experiments/{}/'.format(args.work_dir,"tmp")
-    args.load_path = '{}experiments/{}/save/'.format(args.work_dir, args.load_name)
-    args.load_model_path = '{}experiments/{}/save/model.pt'.format(args.work_dir, args.load_name)
-    args.load_parameters_path = '{}experiments/{}/save/parameters.json'.format(args.work_dir, args.load_name)
-    args.load_experiment_path = '{}experiments/{}/save/experiment.dat'.format(args.work_dir, args.load_name)
-    args.load_listener_path = '{}experiments/{}/save/listener.json'.format(args.work_dir, args.save_name)
     args.save_parameters_path = '{}experiments/{}/save/parameters.json'.format(args.work_dir, args.save_name)
     args.save_model_path = '{}experiments/{}/save/model.pt'.format(args.work_dir, args.save_name)
     args.save_experiment_path = '{}experiments/{}/save/experiment.dat'.format(args.work_dir, args.save_name)
@@ -147,10 +127,7 @@ def parse_args(prog = sys.argv[1:]):
     args.seg_style_path = '{}examples/segmentation/tar{}.png'.format(args.work_dir,args.style_image)
     args.seg_content_path = '{}examples/segmentation/in{}.png'.format(args.work_dir,args.content_image)
 
-    if args.resume_model and not(os.path.exists('{}experiments/{}/'.format(args.work_dir, args.load_name))):
-        raise Exception("Tried to retrieve a model that does not exist at location : "+'{}experiments/{}/'.format(args.work_dir, args.load_name))
-    
-    if not(args.ghost) and os.path.exists('{}experiments/{}'.format(args.work_dir, args.save_name)) and (args.load_name!=args.save_name or not(args.resume_model)):
+    if not(args.ghost) and os.path.exists('{}experiments/{}'.format(args.work_dir, args.save_name)):
         cont = input("You have entered an experiment name that already exists even though you are not resuming that experiment, do you wish to continue (this will delete the folder: "+args.res_dir+"). [y/n] ") == "y"
         if cont:
             shutil.rmtree(args.res_dir)

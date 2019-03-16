@@ -8,3 +8,6 @@ comparaison.py
 image_preprocessing.py
 closed_form_matting.py
 neural_style.py
+semsegpt/
+styletransfer/
+
