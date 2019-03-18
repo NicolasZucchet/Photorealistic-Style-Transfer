@@ -1,0 +1,6 @@
+wget
+numpy
+tqdm
+scikit-image
+selenium
+pandas

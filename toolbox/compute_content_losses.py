@@ -30,9 +30,10 @@ class ContentLoss(nn.Module):
 
 class Calculator():
 
-    def __init__(self, args):
+    def __init__(self, device="cpu"):
 
-        self.parameters = Experiment(args)
+        self.device = device
+        self.imsize =
 
         self.cnn = models.vgg19(pretrained=True).features.to(self.parameters.device).eval()
 
