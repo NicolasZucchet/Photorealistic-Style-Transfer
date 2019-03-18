@@ -4,30 +4,22 @@ import pandas
 from toolbox.path_setup import *
 import matplotlib.pyplot as plt
 
-def generate_segmentation(name_experiment, images):
+def generate_segmentation_cli(name_experiment, images):
     experiments_path, images_path, results_path, masks_path = prepare_experiment(name_experiment)
 
-    to_experiments = "../" + experiments_path
-    string_paths = string_images(images, images_path, prefix=to_experiments)
+    to_main = "../"
+    string_paths = string_images(images, images_path, prefix=to_main)
 
     # generation of the cli
     cli = "test.py \
-          --model_path models \
+          --model_path models/baseline-resnet50dilated-ppm_deepsup \
           --test_imgs " + string_paths + " \
           --arch_encoder resnet50dilated \
           --arch_decoder ppm_deepsup \
           --fc_dim 2048 \
-          --result " + to_experiments + results_path
+          --result " + to_main + results_path
 
-    os.chdir("semsegpt")
-    os.system("python "+cli)
-    os.chdir("..")
-
-    for image in images:
-        res_path = results_path + "/" + image[:-4] + '.png'
-        save_segmentation(res_path, masks_path)
-
-    return "experiments/" + masks_path, results_path
+    return cli, masks_path, results_path
 
 def save_segmentation(image_path, save_dir):
     print(image_path, save_dir)
@@ -92,6 +84,5 @@ def get_all_topics(segmented_image, k=3):
     topics = ""
     for e in c.top(k):
         id = get_id_from_color(e)
-        print(id)
         topics += objects[id] + ";"
     return topics

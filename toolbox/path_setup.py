@@ -9,7 +9,7 @@ def create_path(path):
 
 def download_models():
     # path for models
-    models_path = 'models'
+    models_path = 'semsegpt/models'
     model = 'baseline-resnet50dilated-ppm_deepsup'
     model_path = models_path + "/" + model
     encoder = model + '/encoder_epoch_20.pth'
@@ -17,11 +17,14 @@ def download_models():
     decoder = model + '/decoder_epoch_20.pth'
     decoder_path = models_path + "/" + decoder
 
+    print(models_path)
+
     # creating dirs
     to_create = [models_path, model_path]
     for folder in to_create:
         create_path(folder)
     if not os.path.exists(encoder_path):
+        print("plse")
         url = "http://sceneparsing.csail.mit.edu/model/pytorch/" + encoder
         wget.download(url, out=model_path)
     if not os.path.exists(decoder_path):
@@ -31,22 +34,23 @@ def download_models():
 def prepare_experiment(name_experiment):
     experiments_path = "examples"
     # path for experiment
-    experiment_path = name_experiment
+    experiment_path = experiments_path + "/" + name_experiment
     # path from images
     images_path = experiment_path + '/images'
     # path for saving results
-    results_path = experiments_path + '/segmentation_results'
+    results_path = experiment_path + '/segmentation_results'
     masks_path = experiment_path + '/masks'
 
     # creating dirs
-    to_create = [experiments_path, experiments_path, images_path, results_path, masks_path]
+    to_create = [experiments_path, experiment_path, images_path, results_path, masks_path]
     for folder in to_create:
         create_path(folder)
 
     return experiments_path, images_path, results_path, masks_path
 
 def download_image(url,path):
-    wget.download(url, out=path)
+    if not os.path.exists(path):
+        wget.download(url, out=path)
 
 def get_path_images(names, path):
     path_images = []
