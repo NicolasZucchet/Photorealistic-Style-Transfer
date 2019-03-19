@@ -47,8 +47,6 @@ def parse_args(prog = sys.argv[1:]):
                         help='the weight given to the content loss')
     parser.add_argument('-reg_weight', default=1, type=float,
                         help='the weight given to the regularization loss')
-    parser.add_argument('-tv_weight', default=1e-4, type=float,
-                        help='the weight given to the tv loss')
 
     # optimizer settings
     parser.add_argument('-optimizer', default="rmsprop", type=str,

@@ -13,16 +13,14 @@ log = logging.getLogger("main")
 
 class ExperimentLosses():
 
-    def __init__(self, content_weight, style_weight, reg_weight, tv_weight, content_image = None, device = 'cpu'):
+    def __init__(self, content_weight, style_weight, reg_weight, content_image = None, device = 'cpu'):
         self.content_losses = []
         self.style_losses = []
         self.reg_losses = []
-        self.tv_losses = []
 
         self.reg_weight = reg_weight
         self.style_weight = style_weight
         self.content_weight = content_weight
-        self.tv_weight = tv_weight
 
         self.current_style_loss = None
         self.current_content_loss = None
@@ -72,11 +70,6 @@ class ExperimentLosses():
         gradient = torch.stack(grads, dim=0).unsqueeze(0)
         return loss, 2. * gradient
 
-    def add_tv_loss(self,loss):
-        self.tv_losses.append(loss)
-    def compute_tv_loss(self):
-        return sum(map(lambda x: x.loss, self.tv_losses)) * self.tv_weight
-    
     def compute_total_loss(self):
         return self.compute_content_loss.item() + self.compute_reg_loss.item() + self.compute_style_loss.item()
 
@@ -157,40 +150,6 @@ class StyleLoss(nn.Module):
             self.loss += F.mse_loss(inputs_G[i], self.targets[i]) * mask_mean
 
         return input_feature
-
-
-# Smoothness loss
-class TVLoss(nn.Module):
-
-    def __init__(self,device):
-        super(TVLoss, self).__init__()
-
-        self.device = device
-
-        self.ky = np.array([
-            [[0, 0, 0],[0, 1, 0],[0,-1, 0]],
-            [[0, 0, 0],[0, 1, 0],[0,-1, 0]],
-            [[0, 0, 0],[0, 1, 0],[0,-1, 0]]
-        ])
-        self.kx = np.array([
-            [[0, 0, 0],[0, 1,-1],[0, 0, 0]],
-            [[0, 0, 0],[0, 1,-1],[0, 0, 0]],
-            [[0, 0, 0],[0, 1,-1],[0, 0, 0]]
-        ])
-        self.conv_x = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv_x.weight = nn.Parameter(torch.from_numpy(self.kx).float().unsqueeze(0).to(self.device),
-                                          requires_grad=False)
-        self.conv_y = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv_y.weight = nn.Parameter(torch.from_numpy(self.ky).float().unsqueeze(0).to(self.device),
-                                          requires_grad=False)
-
-    def forward(self, input):
-        gx = self.conv_x(input)
-        gy = self.conv_y(input)
-
-        self.loss = torch.sum(gx**2 + gy**2)/2.0
-        return input
-
 
 class AugmentedStyleLoss(nn.Module):
     def __init__(self, target_feature, target_masks, input_masks, weight = 1):
