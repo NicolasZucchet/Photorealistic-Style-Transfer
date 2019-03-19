@@ -3,7 +3,7 @@ import time
 import torch
 import torch.nn as nn
 from toolbox.image_preprocessing import image_loader, masks_loader, tensor_to_image, image_to_tensor
-from toolbox.segmentation import get_segmentation, merge_classes
+from toolbox.segmentation import get_segmentation, merge_mask
 import logging
 
 
@@ -17,7 +17,7 @@ class Experiment():
         self.content_image = image_loader(parameters.content_image_path, parameters.imsize).to(parameters.device, torch.float)
         style_mask_origin, height_, width_ = get_segmentation(parameters.seg_style_path, parameters.imsize)
         content_mask_origin, height2, width2 = get_segmentation(parameters.seg_content_path, parameters.imsize)
-        self.style_mask,self.content_mask = merge_classes(style_mask_origin,
+        self.style_mask,self.content_mask = merge_mask(style_mask_origin,
                                                               content_mask_origin,
                                                               height_,width_,
                                                               height2,width2,
