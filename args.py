@@ -20,8 +20,8 @@ def parse_args(prog = sys.argv[1:]):
     # plotting
     parser.add_argument('-no_metrics', default=False, action='store_true', help='do not records metrics for this experiment')
     # images to use
-    parser.add_argument('-style_image', default='1', type=str, help='ID of the style image to use')
-    parser.add_argument('-content_image', default='1', type=str, help='ID of the content image to use')
+    parser.add_argument('-style_image', default='1', type=str, help='name of the style image to use in the examples directory')
+    parser.add_argument('-content_image', default='1', type=str, help='name of the content image to use in the examples directory')
     parser.add_argument('-input_image', default='content', type=str, help='Which image should be used as initial input image : content, style, white, noise')
     parser.add_argument('-imsize', default=512, type=int, help='size to which the images should be resized (on cpu, default will be 32)')
 
@@ -120,10 +120,10 @@ def parse_args(prog = sys.argv[1:]):
     args.save_listener_path = '{}experiments/{}/save/listener.json'.format(args.work_dir, args.save_name)
     # TMP SAVE PATHS NOT YET IMPLEMENTED
 
-    args.style_image_path = '{}examples/style/tar{}.png'.format(args.work_dir,args.style_image)
-    args.content_image_path = '{}examples/input/in{}.png'.format(args.work_dir,args.content_image)
-    args.seg_style_path = '{}examples/segmentation/tar{}.png'.format(args.work_dir,args.style_image)
-    args.seg_content_path = '{}examples/segmentation/in{}.png'.format(args.work_dir,args.content_image)
+    args.style_image_path = '{}examples/{}.png'.format(args.work_dir,args.style_image)
+    args.content_image_path = '{}examples/{}.png'.format(args.work_dir,args.content_image)
+    args.seg_style_path = '{}examples/{}_seg.png'.format(args.work_dir,args.style_image)
+    args.seg_content_path = '{}examples/{}_seg.png'.format(args.work_dir,args.content_image)
 
     if not(args.ghost) and os.path.exists('{}experiments/{}'.format(args.work_dir, args.save_name)):
         cont = input("You have entered an experiment name that already exists even though you are not resuming that experiment, do you wish to continue (this will delete the folder: "+args.res_dir+"). [y/n] ") == "y"
