@@ -35,7 +35,6 @@ def get_model_and_losses(experiment, parameters, content_image):
         parameters.content_weight,
         parameters.style_weight,
         parameters.reg_weight,
-        parameters.tv_weight,
         content_image=content_image,
         device=parameters.device)
 
@@ -44,11 +43,6 @@ def get_model_and_losses(experiment, parameters, content_image):
 
     num_pool, num_conv = 0, 0
     n_loss_layers, total_loss_layers = 0, len(parameters.content_layers)+len(parameters.style_layers)
-
-    # adding tv loss
-    tv_loss = TVLoss(device=parameters.device)
-    model.add_module("tv_loss_{}".format(0), tv_loss)
-    losses.add_tv_loss(tv_loss)
 
     count = 0
     for layer in cnn.children():
