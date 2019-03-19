@@ -38,9 +38,10 @@ def get_model_and_losses(experiment, parameters, content_image):
         parameters.tv_weight,
         content_image=content_image,
         device=parameters.device)
-    style_masks = copy.deepcopy(experiment.style_mask)
-    content_masks = copy.deepcopy(experiment.content_mask)
-    
+
+    #print(style_masks[0].shape)
+    #exit(0)
+
     num_pool, num_conv = 0, 0
     n_loss_layers, total_loss_layers = 0, len(parameters.content_layers)+len(parameters.style_layers)
 
@@ -65,13 +66,6 @@ def get_model_and_losses(experiment, parameters, content_image):
             num_pool += 1
             num_conv = 0
             name = "pool_{}".format(num_pool)
-            layer = nn.AvgPool2d(
-                kernel_size=layer.kernel_size,
-                stride=layer.stride,
-                padding=layer.padding,
-            )
-            style_masks = [layer(mask) for mask in style_masks]
-            content_masks = [layer(mask) for mask in content_masks]
 
         elif isinstance(layer, nn.BatchNorm2d):
             name = "bn{}_{}".format(num_pool, num_conv)
@@ -96,7 +90,7 @@ def get_model_and_losses(experiment, parameters, content_image):
         if name in parameters.style_layers:
             n_loss_layers += 1
             target_feature = model(experiment.style_image).detach()
-            style_loss = AugmentedStyleLoss(target_feature, style_masks, content_masks, weight= 1/len(parameters.style_layers))
+            style_loss = StyleLoss(target_feature, experiment.style_mask.detach(), experiment.content_mask.detach(), parameters.device)
             model.add_module("style_loss_{}".format(num_pool), style_loss)
             losses.add_style_loss(style_loss)
 

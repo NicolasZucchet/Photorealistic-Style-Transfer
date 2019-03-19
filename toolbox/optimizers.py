@@ -40,20 +40,20 @@ def get_optimizer_scheduler(experience,parameters):
 
 
     if 'step' == parameters.scheduler:
-        log.info(f' --- Setting lr scheduler to StepLR ---')
+        log.info(' --- Setting lr scheduler to StepLR ---')
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=parameters.lr_step, gamma=parameters.lr_decay)
     elif 'exponential' == parameters.scheduler:
-        log.info(f' --- Setting lr scheduler to ExponentialLR ---')
+        log.info(' --- Setting lr scheduler to ExponentialLR ---')
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=parameters.lr_decay)    
     elif 'plateau' == parameters.scheduler:
-        log.info(f' --- Setting lr scheduler to ReduceLROnPlateau ---') 
+        log.info(' --- Setting lr scheduler to ReduceLROnPlateau ---')
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=parameters.lr_decay, patience=parameters.lr_step)
     elif 'adjusted' == parameters.scheduler:
         scheduler = Adjust_lr(experience,optimizer,parameters)
     elif 'none' == parameters.scheduler:
         scheduler = EmptyScheduler()
     else:
-        raise f'Scheduler {parameters.scheduler} not available'
+        raise 'Scheduler {parameters.scheduler} not available'
     
     return optimizer,scheduler
 

@@ -69,9 +69,15 @@ class Counter:
                 break
         return r
 
-def get_id_from_color(HEXcolor):
+def get_id_from_HEXcolor(HEXcolor):
     for i in range(len(HEXcolors)):
-        if HEXcolors[i] == HEXcolor:
+        if (HEXcolors[i] == HEXcolor).all():
+            return i
+    return -1
+
+def get_id_from_RGBcolor(RGBcolor):
+    for i in range(len(RGBcolors)):
+        if (RGBcolors[i] == RGBcolor).all():
             return i
     return -1
 
@@ -85,7 +91,7 @@ def get_all_topics(segmented_image, k=3):
             c.add(hex)
     topics = ""
     for e in c.top(k):
-        id = get_id_from_color(e)
+        id = get_id_from_HEXcolor(e)
         topics += objects[id] + ";"
     return topics
 
@@ -108,22 +114,26 @@ del_classed = [26, 60, 128, 9, 17, 32, 1, 25, 48, 79, 84, 11, 13, 29, 46, 51, 52
 
 
 def get_segmentation(segmentation_path,size):
-    """
-    Generate semantic mask
-    """
-    seg_result = image_loader(segmentation_path,size)
-    channel, height_, width_ = seg_result.size()
+    seg_result = image_loader(segmentation_path,size).squeeze(0)
+    c,w,h = seg_result.size()
+    masks = torch.zeros(150,w,h, dtype=torch.int)
+    for i in range(w):
+        for j in range(h):
+            id = get_id_from_RGBcolor(seg_result[:3,i,j].data.numpy())
+            masks[id,i,j] = 1
+    channels, height_, width_ = masks.size()
+
 
     for classes in merge_classes:
         for index, each_class in enumerate(classes):
             if index == 0:
                 zeros_index = each_class
-                base_map = seg_result[each_class, :, :].clone()
+                base_map = masks[each_class, :, :].clone()
             else:
-                base_map = base_map | seg_result[each_class, :, :]
-        seg_result[zeros_index, :, :] = base_map
+                base_map = base_map | masks[each_class, :, :]
+        masks[zeros_index, :, :] = base_map
 
-    return seg_result, height_, width_
+    return masks, height_, width_
 
 def merge_mask(style_mask_origin,content_mask_origin,height_,width_,height2,width2,device):
     merged_style_mask = np.zeros((117, height_, width_), dtype='int')
