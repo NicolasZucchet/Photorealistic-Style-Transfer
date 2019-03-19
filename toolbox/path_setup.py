@@ -38,8 +38,8 @@ def prepare_experiment(name_experiment):
     # path from images
     images_path = experiment_path + '/images'
     # path for saving results
-    results_path = experiment_path + '/segmentation_results'
-    masks_path = experiment_path + '/masks'
+    results_path = experiment_path + '/images'
+    masks_path = experiment_path + '/images'
 
     # creating dirs
     to_create = [experiments_path, experiment_path, images_path, results_path, masks_path]

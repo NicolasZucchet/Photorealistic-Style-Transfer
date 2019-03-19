@@ -36,7 +36,7 @@ def plot_segmented_images(path, images):
     columns = 2
     for i, image in enumerate(images):
         plt.subplot(len(images) / columns + 1, columns, i + 1)
-        img=mpimg.imread(path + "/" + image[:-4]+".png")
+        img=mpimg.imread(path + "/" + image[:-4]+"_seg.png")
         # separate the image into input value and segmented value
         plt.imshow(img)
 
