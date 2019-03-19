@@ -49,17 +49,13 @@ def create_experience(query = None, parameters = None):
 
 def run_experience(experiment, model, parameters, losses, optimizer, scheduler, listener, log):
 
-    # initialize the losses with a forward pass
-    experiment.input_image.data.clamp_(0, 1)
-    optimizer.zero_grad()
-    model.forward(experiment.input_image)
-
     best_loss = 1e10
     best_input = None
 
     while experiment.local_epoch < parameters.num_epochs :
 
         def closure():
+            nonlocal experiment
             nonlocal best_input
             nonlocal best_loss
 
@@ -70,7 +66,7 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
             # init
             experiment.input_image.data.clamp_(0, 1)
             optimizer.zero_grad()
-            model.forward(experiment.input_image)
+            model(experiment.input_image)
 
             style_loss = losses.compute_style_loss()
             meters["style_loss"].update(style_loss.item())
@@ -91,6 +87,7 @@ def run_experience(experiment, model, parameters, losses, optimizer, scheduler, 
                 best_loss = loss
                 best_input = experiment.input_image.data.clone()
 
+            experiment.input_image.retain_grad()
             loss.backward()
 
             meters["total_loss"].update(loss.item())
@@ -138,8 +135,6 @@ def main():
     scheduler = experience["scheduler"]
 
     run_experience(experiment, model, parameters, losses, optimizer, scheduler, listener, log)
-
-    print()
 
     experiment.input_image.data.clamp_(0, 1)
 

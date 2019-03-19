@@ -4,3 +4,5 @@ tqdm
 scikit-image
 selenium
 pandas
+seaborn
+pillow

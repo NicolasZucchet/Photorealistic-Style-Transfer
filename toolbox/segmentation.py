@@ -1,6 +1,8 @@
 import matplotlib.image as mpimg
-import wget
+import torch
 import pandas
+
+from toolbox.image_preprocessing import image_loader
 from toolbox.path_setup import *
 import matplotlib.pyplot as plt
 
@@ -86,3 +88,58 @@ def get_all_topics(segmented_image, k=3):
         id = get_id_from_color(e)
         topics += objects[id] + ";"
     return topics
+
+water_class = [21, 26, 60, 128]
+tree_class = [4, 9, 17, 32]
+building_class = [0, 1, 25, 48, 79, 84]
+road_class = [6, 11, 13, 29, 46, 51, 52, 68, 91, 94, 101]
+roof_class = [5, 86]
+mountain_class = [16, 34]
+stair_class = [53, 59, 121]
+chair_class = [19, 23, 30, 31, 69, 75]
+vehicle_class = [20, 80, 83, 102]
+
+merge_classes = [water_class, tree_class, building_class,
+                 road_class, roof_class, mountain_class,
+                 stair_class, chair_class, vehicle_class]
+
+del_classed = [26, 60, 128, 9, 17, 32, 1, 25, 48, 79, 84, 11, 13, 29, 46, 51, 52, 68, 91, 94, 101,
+               86, 34, 59, 121, 23, 30, 31, 69, 75, 80, 83, 102]
+
+
+def get_segmentation(segmentation_path,size):
+    """
+    Generate semantic mask
+    """
+    seg_result = image_loader(segmentation_path,size)
+    channel, height_, width_ = seg_result.size()
+
+    for classes in merge_classes:
+        for index, each_class in enumerate(classes):
+            if index == 0:
+                zeros_index = each_class
+                base_map = seg_result[each_class, :, :].clone()
+            else:
+                base_map = base_map | seg_result[each_class, :, :]
+        seg_result[zeros_index, :, :] = base_map
+
+    return seg_result, height_, width_
+
+def merge_mask(style_mask_origin,content_mask_origin,height_,width_,height2,width2,device):
+    merged_style_mask = np.zeros((117, height_, width_), dtype='int')
+    merged_content_mask = np.zeros((117, height2, width2), dtype='int')
+    print()
+    # --------------------------
+    count = 0
+    for i in range(150):
+        temp = style_mask_origin[i, :, :].numpy()
+        if i not in del_classed and np.sum(temp) > 50:
+            # print(count, np.sum(temp))
+            merged_style_mask[count, :, :] = temp
+            merged_content_mask[count, :, :] = content_mask_origin[i, :, :].numpy()
+            count += 1
+        else:
+            pass
+    style_mask_tensor = torch.from_numpy(merged_style_mask[:count, :, :]).float().to(device)
+    content_mask_tensor = torch.from_numpy(merged_content_mask[:count, :, :]).float().to(device)
+    return style_mask_tensor,content_mask_tensor

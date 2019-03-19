@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
+from torch.autograd import Variable
+
 from models.closed_form_matting import compute_laplacian
 from toolbox.image_preprocessing import tensor_to_image, image_to_tensor
 import logging
@@ -31,7 +33,15 @@ class ExperimentLosses():
         if reg_weight > 0 :
             if content_image is None:
                 raise Exception("content image should be provided if regularization is demanded")
-            self.L = compute_laplacian(tensor_to_image(content_image))
+            laplacian = compute_laplacian(tensor_to_image(content_image))
+            values = laplacian.data
+            indices = np.vstack((laplacian.row, laplacian.col))
+
+            i = torch.LongTensor(indices)
+            v = torch.FloatTensor(values)
+            shape = laplacian.shape
+
+            self.L = Variable(torch.sparse.FloatTensor(i, v, torch.Size(shape)).to_dense().to(self.device), requires_grad=False)
             log.info("laplacian computed")
 
 
@@ -47,19 +57,20 @@ class ExperimentLosses():
 
     def compute_reg_loss(self,input_image):
         reg_loss, reg_grad = self.regularization_grad(input_image)
-        reg_grad_tensor = image_to_tensor(reg_grad,device=self.device)
-        input_image.grad += self.reg_weight * reg_grad_tensor # DOES THIS UPDATE THE IMAGE GLOBALY ? 
         self.current_reg_loss = self.reg_weight * reg_loss
         return self.current_reg_loss
-    def regularization_grad(self, input_image):
-        """
-        Photorealistic regularization
-        """
-        im = tensor_to_image(input_image)
-        grad = self.L.dot(im.reshape(-1, 3))
-        loss = (grad * im.reshape(-1, 3)).sum()
-        new_grad = 2. * grad.reshape(*im.shape)
-        return loss, new_grad
+    def regularization_grad(self, image):
+        im = tensor_to_image(image)
+        img = image.squeeze(0)
+        channel, height, width = img.size()
+        loss = 0
+        grads = list()
+        for i in range(channel):
+            grad = torch.mm(self.L, img[i, :, :].reshape(-1, 1))
+            loss += torch.mm(img[i, :, :].reshape(1, -1), grad)
+            grads.append(grad.reshape((height, width)))
+        gradient = torch.stack(grads, dim=0).unsqueeze(0)
+        return loss, 2. * gradient
 
     def add_tv_loss(self,loss):
         self.tv_losses.append(loss)

@@ -3,6 +3,7 @@ import time
 import torch
 import torch.nn as nn
 from toolbox.image_preprocessing import image_loader, masks_loader, tensor_to_image, image_to_tensor
+from toolbox.segmentation import get_segmentation, merge_classes
 import logging
 
 
@@ -14,6 +15,16 @@ class Experiment():
         # images
         self.style_image = image_loader(parameters.style_image_path, parameters.imsize).to(parameters.device, torch.float)
         self.content_image = image_loader(parameters.content_image_path, parameters.imsize).to(parameters.device, torch.float)
+        style_mask_origin, height_, width_ = get_segmentation(parameters.seg_style_path, parameters.imsize)
+        content_mask_origin, height2, width2 = get_segmentation(parameters.seg_content_path, parameters.imsize)
+        self.style_mask,self.content_mask = merge_classes(style_mask_origin,
+                                                              content_mask_origin,
+                                                              height_,width_,
+                                                              height2,width2,
+                                                              parameters.device)
+        log.info("masks loaded")
+
+
         if parameters.input_image == "content":
             self.input_image = self.content_image.clone()
         elif parameters.input_image == "style":
@@ -26,12 +37,6 @@ class Experiment():
             self.input_image.random_(0,1000).div_(1000)
             log.info("images loaded")
 
-        # masks
-        self.style_masks, self.content_masks = masks_loader(parameters.seg_style_path, parameters.seg_content_path, parameters.imsize)
-        for i in range(len(self.style_masks)):
-            self.style_masks[i] = self.style_masks[i].to(parameters.device)
-            self.content_masks[i] = self.content_masks[i].to(parameters.device)
-        log.info("masks loaded")
 
         self.local_epoch = 0
         self.epoch = 0

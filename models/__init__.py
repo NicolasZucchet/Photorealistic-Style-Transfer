@@ -38,8 +38,8 @@ def get_model_and_losses(experiment, parameters, content_image):
         parameters.tv_weight,
         content_image=content_image,
         device=parameters.device)
-    style_masks = copy.deepcopy(experiment.style_masks)
-    content_masks = copy.deepcopy(experiment.content_masks)
+    style_masks = copy.deepcopy(experiment.style_mask)
+    content_masks = copy.deepcopy(experiment.content_mask)
     
     num_pool, num_conv = 0, 0
     n_loss_layers, total_loss_layers = 0, len(parameters.content_layers)+len(parameters.style_layers)

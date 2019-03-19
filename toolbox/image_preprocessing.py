@@ -217,4 +217,3 @@ def plt_images(
     plt.tight_layout()
     plt.show()
 
-

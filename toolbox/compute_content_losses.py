@@ -13,9 +13,6 @@ from models.base_models import *
 
 
 class ContentLoss(nn.Module):
-    """
-    See Gatys et al. for the details.
-    """
 
     def __init__(self, target, weight = 1):
         super(ContentLoss, self).__init__()
@@ -33,20 +30,20 @@ class Calculator():
     def __init__(self, device="cpu"):
 
         self.device = device
-        self.imsize =
+        self.imsize = (512,512) if device == "cuda" else (128,128)
+        self.content_layers = ['conv4_2']
 
-        self.cnn = models.vgg19(pretrained=True).features.to(self.parameters.device).eval()
+        self.cnn = models.vgg19(pretrained=True).features.to(self.device).eval()
 
     def setup_reference(self, reference):
         content_losses = []
 
-        normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(self.parameters.device)
-        normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(self.parameters.device)
-        normalization = Normalization(normalization_mean, normalization_std).to(self.parameters.device)
+        normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(self.device)
+        normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(self.device)
+        normalization = Normalization(normalization_mean, normalization_std).to(self.device)
         self.model = nn.Sequential(normalization)
 
-        self.content_image = image_loader(reference, self.parameters.imsize).to(self.parameters.device, torch.float)
-        print(self.content_image.size())
+        self.content_image = image_loader(reference, self.imsize).to(self.device, torch.float)[:,:3,:,:]
 
         num_pool, num_conv = 0, 0
 
@@ -82,10 +79,10 @@ class Calculator():
 
             self.model.add_module(name, layer)
 
-            if name in self.parameters.content_layers:
+            if name in self.content_layers:
                 # if we are resuming, the loss layers are already created
                 target = self.model(self.content_image).detach()
-                content_loss = ContentLoss(target, weight=1 / len(self.parameters.content_layers))
+                content_loss = ContentLoss(target, weight=1 / len(self.content_layers))
                 self.model.add_module("content_loss_{}".format(num_pool), content_loss)
                 content_losses.append(content_loss)
 
@@ -94,28 +91,22 @@ class Calculator():
 
     def run(self, target, *args):
 
-        self.input_image = image_loader(target, self.parameters.imsize).to(self.parameters.device, torch.float)
+        self.input_image = image_loader(target, self.imsize).to(self.device, torch.float)
 
         self.input_image.data.clamp_(0, 1)
 
-        print(self.input_image.size())
+        self.model(self.input_image[:,:3,:,:])
 
-        self.model(self.input_image)
-        content_loss = sum(map(lambda x: x.loss, self.content_losses))
-        content_score = self.parameters.content_weight * content_loss
+        content_loss = sum(map(lambda x: 10e2 * x.loss, self.content_losses))
 
-        loss = content_score
-
-        return loss
+        return content_loss
 
     def distance_matrix(self,list):
         matrix = np.zeros((len(list),len(list)))
         for i in range(len(list)):
             self.setup_reference(list[i])
             for j in range(i+1,len(list)):
-                timer = time.time()
                 matrix[i,j] = self.run(list[j])
-                print(timer-time.time())
         matrix = matrix + matrix.T
         return matrix
 
