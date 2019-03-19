@@ -1,6 +1,5 @@
 import sys
 import os
-import wget
 from toolbox.path_setup import download_models
 
 os.system(sys.executable + " -m pip install -r requirements.txt")
